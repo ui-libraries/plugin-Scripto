@@ -8,7 +8,7 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
      * @var Omeka_Db
      */
     private $_db;
-    
+
     /**
      * Set the database object on construction.
      */
@@ -16,10 +16,10 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
     {
         $this->_db = get_db();
     }
-    
+
     /**
      * Indicate whether the document exists in Omeka.
-     * 
+     *
      * @param int|string $documentId The unique document ID
      * @return bool True: it exists; false: it does not exist
      */
@@ -27,10 +27,10 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
     {
         return $this->_validDocument($this->_getItem($documentId));
     }
-    
+
     /**
      * Indicate whether the document page exists in Omeka.
-     * 
+     *
      * @param int|string $documentId The unique document ID
      * @param int|string $pageId The unique page ID
      * @return bool True: it exists; false: it does not exist
@@ -50,12 +50,12 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
         }
         return false;
     }
-    
+
     /**
      * Get all the pages belonging to the document.
-     * 
+     *
      * @param int|string $documentId The unique document ID
-     * @return array An array containing page identifiers as keys and page names 
+     * @return array An array containing page identifiers as keys and page names
      * as values, in sequential page order.
      */
     public function getDocumentPages($documentId)
@@ -63,7 +63,7 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
         $item = $this->_getItem($documentId);
         $documentPages = array();
         foreach ($item->Files as $file) {
-            // The page name is either the Dublin Core title of the file or the 
+            // The page name is either the Dublin Core title of the file or the
             // file's original filename.
             $titles = $file->getElementTexts('Dublin Core', 'Title');
             if (empty($titles)) {
@@ -75,10 +75,10 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
         }
         return $documentPages;
     }
-    
+
     /**
      * Get the URL of the specified document page file.
-     * 
+     *
      * @param int|string $documentId The unique document ID
      * @param int|string $pageId The unique page ID
      * @return string The page file URL
@@ -88,10 +88,10 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
         $file = $this->_getFile($pageId);
         return $file->getWebPath('original');
     }
-    
+
     /**
      * Get the first page of the document.
-     * 
+     *
      * @param int|string $documentId The document ID
      * @return int|string
      */
@@ -100,10 +100,10 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
         $item = $this->_getItem($documentId);
         return $item->Files[0]->id;
     }
-    
+
     /**
      * Get the title of the document.
-     * 
+     *
      * @param int|string $documentId The document ID
      * @return string
      */
@@ -116,10 +116,10 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
         }
         return $titles[0]->text;
     }
-    
+
     /**
      * Get the name of the document page.
-     * 
+     *
      * @param int|string $documentId The document ID
      * @param int|string $pageId The unique page ID
      * @return string
@@ -127,8 +127,8 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
     public function getDocumentPageName($documentId, $pageId)
     {
         $file = $this->_getFile($pageId);
-        
-        // The page name is either the Dublin Core title of the file or the 
+
+        // The page name is either the Dublin Core title of the file or the
         // file's original filename.
         $titles = $file->getElementTexts('Dublin Core', 'Title');
         if (empty($titles)) {
@@ -138,28 +138,49 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
         }
         return $pageName;
     }
-    
+
+    /**
+     * Get the existing document page transcription if it already exists.
+     *
+     * @param int|string $pageId The unique page ID
+     * @return string
+     */
+    public function getDocumentPageTranscription($pageId)
+    {
+        $file = $this->_getFile($pageId);
+
+        // The transcription text comes from the Scripto transcription field of the file.
+        // If no existing transcription, then return null.
+        $transcription = $file->getElementTexts('Scripto', 'Transcription');
+        if (empty($transcription)) {
+            $pageText = null;
+        } else {
+            $pageText = $transcription[0]->text;
+        }
+        return $pageText;
+    }
+
     /**
      * Indicate whether the document transcription has been imported.
-     * 
+     *
      * @param int|string $documentId The document ID
      * @return bool True: has been imported; false: has not been imported
      */
     public function documentTranscriptionIsImported($documentId)
     {}
-    
+
     /**
      * Indicate whether the document page transcription has been imported.
-     * 
+     *
      * @param int|string $documentId The document ID
      * @param int|string $pageId The page ID
      */
     public function documentPageTranscriptionIsImported($documentId, $pageId)
     {}
-    
+
     /**
      * Import a document page's transcription into Omeka.
-     * 
+     *
      * @param int|string $documentId The document ID
      * @param int|string $pageId The page ID
      * @param string $text The text to import
@@ -178,10 +199,10 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
         $file->addTextForElement($element, $text, $isHtml);
         $file->save();
     }
-    
+
     /**
      * Import an entire document's transcription into Omeka.
-     * 
+     *
      * @param int|string The document ID
      * @param string The text to import
      * @return bool True: success; false: fail
@@ -199,10 +220,91 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
         $item->addTextForElement($element, $text, $isHtml);
         $item->save();
     }
-    
+
+    /**
+     * Check the transcription status of a document page in the Omeka database.
+     *
+     * @param int|string $documentId The documentID
+     * @param int|string $pageId The page ID
+     * @return string
+     */
+    public function documentPageTranscriptionStatus($pageId)
+    {
+        $file = $this->_getFile($pageId);
+        $elementTexts = $file->getElementTexts('Scripto', 'Status');
+        foreach ($elementTexts as $elementText) {
+            $status = $elementText->text;
+        }
+        if (empty($status)) {
+            $status = 'Not Started';
+            return $status;
+        } else {
+            return $status;
+        }
+    }
+
+    /**
+     * Set a page transcription status in Omeka.
+     *
+     * @param int|string $documentId The document ID
+     * @param int|string $pageId The page ID
+     * @param int|string $status The page transcription status
+     */
+    public function importPageTranscriptionStatus($documentId, $pageId, $status)
+    {
+        // Delete current transcription status.
+        $file = $this->_getFile($pageId);
+        $element = $file->getElement('Scripto', 'Status');
+        $file->deleteElementTextsByElementId(array($element->id));
+        // Save status to Omeka.
+        $file->addTextForElement($element, $status);
+        $file->save();
+    }
+
+    /**
+     * Set the document progress (percent transcribed) in Omeka.
+     *
+     * @param int|string $documentId The document ID
+     * @param int|string $progress The document progress
+     */
+    public function importDocumentTranscriptionProgress($documentId, $completedProgress, $needsReviewProgress)
+    {
+        // Delete current values for Percent Completed and Percent Needs Review.
+        $item = $this->_getItem($documentId);
+        $completed = $item->getElement('Scripto', 'Percent Completed');
+        $needsReview = $item->getElement('Scripto', 'Percent Needs Review');
+        $item->deleteElementTextsByElementId(array($completed->id));
+        $item->deleteElementTextsByElementId(array($needsReview->id));
+        // Save progress to Omeka.
+        if ($completedProgress != '0') {
+            $item->addTextForElement($completed, $completedProgress);
+        }
+        if ($needsReviewProgress != '0') {
+            $item->addTextForElement($needsReview, $needsReviewProgress);
+        }
+        $item->save();
+    }
+
+    /**
+     * Set the item sort weight in item-level Omeka record ('Audience', 'Dublin Core').
+     *
+     * @param int|string $documentId The document ID
+     * @param int|string $weight The 9 digit sort weight
+     */
+    public function importItemSortWeight($documentId, $weight)
+    {
+        // Delete current value of item sort weight.
+        $item = $this->_getItem($documentId);
+        $sortWeight = $item->getElement('Dublin Core', 'Audience');
+        $item->deleteElementTextsByElementId(array($sortWeight->id));
+        // Save sort weight to Omeka.
+        $item->addTextForElement($sortWeight, $weight);
+        $item->save();
+    }
+
     /**
      * Return an Omeka item object.
-     * 
+     *
      * @param int $itemId
      * @return Item|null
      */
@@ -210,10 +312,10 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
     {
         return $this->_db->getTable('Item')->find($itemId);
     }
-    
+
     /**
      * Return an Omeka file object.
-     * 
+     *
      * @param int $fileId
      * @return File|int
      */
@@ -221,11 +323,11 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
     {
         return $this->_db->getTable('File')->find($fileId);
     }
-    
+
     /**
-     * Check if the provided item exists in Omeka and is a valid Scripto 
+     * Check if the provided item exists in Omeka and is a valid Scripto
      * document.
-     * 
+     *
      * @param Item $item
      * @return bool
      */

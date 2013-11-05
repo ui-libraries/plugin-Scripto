@@ -9,10 +9,10 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
      */
     public function init()
     {
-        // Change the display strategy for certain files on the transcribe 
+        // Change the display strategy for certain files on the transcribe
         // action.
         if ('transcribe' == $this->getRequest()->getActionName()) {
-            
+
             // Image viewers.
             switch (get_option('scripto_image_viewer')) {
                 case 'openlayers':
@@ -25,14 +25,14 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
                     // Do nothing. Use Omeka default file display stategy.
                     break;
             }
-            
+
             // Google Docs viewer.
             if (get_option('scripto_use_google_docs_viewer')) {
                 add_file_display_callback(ScriptoPlugin::$fileIdentifiersGoogleDocs, 'ScriptoPlugin::googleDocs');
             }
         }
     }
-    
+
     /**
      * View document pages to which you have contributed.
      */
@@ -48,12 +48,12 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
         } catch (Scripto_Exception $e) {
             $this->_helper->flashMessenger($e->getMessage());
         }
-        
+
         $this->view->scripto = $scripto;
         $this->view->documentPages = $documentPages;
         $this->view->homePageText = trim(get_option('scripto_home_page_text'));
     }
-    
+
     /**
      * Log in to Scripto.
      */
@@ -63,7 +63,7 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
             $scripto = ScriptoPlugin::getScripto();
             // Handle a login.
             if ($this->_getParam('scripto_mediawiki_login')) {
-                $scripto->login($this->_getParam('scripto_mediawiki_username'), 
+                $scripto->login($this->_getParam('scripto_mediawiki_username'),
                                 $this->_getParam('scripto_mediawiki_password'));
                 $this->_helper->flashMessenger(__('Successfully logged into Scripto.'), 'success');
             }
@@ -78,22 +78,22 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
         } catch (Scripto_Service_Exception $e) {
             $this->_helper->flashMessenger($e->getMessage());
         }
-        
+
         // Set the URL to redirect to on a sucessful login.
         $redirectUrl = null;
         if ($this->_getParam('scripto_redirect_url')) {
             // Assume login error and reassign the parameter.
             $redirectUrl = $this->_getParam('scripto_redirect_url');
         } else if ('scripto' == $this->getRequest()->getModuleName() && $_SERVER['HTTP_REFERER']) {
-            // Assign HTTP referer to scripto_redirect_url parameter only if 
+            // Assign HTTP referer to scripto_redirect_url parameter only if
             // coming from the Scripto application.
             $redirectUrl = $_SERVER['HTTP_REFERER'];
         }
-        
+
         $this->view->redirectUrl = $redirectUrl;
         $this->view->scripto = $scripto;
     }
-    
+
     /**
      * Log out of Scripto.
      */
@@ -106,11 +106,30 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
         } catch (Scripto_Exception $e) {
             $this->_helper->flashMessenger($e->getMessage());
         }
-        
+
         // Always redirect.
         $this->_helper->redirector->goto('index');
     }
-    
+
+    /**
+     * Initialize all pages for all items.
+     */
+    public function setPagesAction()
+    {
+        $searchItems = $this->_helper->SearchItems;
+        $items = $searchItems->search();
+        foreach ($items['items'] as $item) {
+            $scripto = ScriptoPlugin::getScripto();
+            if ($scripto->documentExists($item->$id)) {
+                $doc = $scripto->getDocument($item->id);
+                foreach ($doc->getPages() as $pageId => $pageName) {
+                    $doc->setPage($pageId);
+                }
+            }
+        }
+        $this->_helper->redirector->goto('index');
+    }
+
     /**
      * View your watchlist.
      */
@@ -118,7 +137,7 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
     {
         try {
             $scripto = ScriptoPlugin::getScripto();
-            // Anonymous users 
+            // Anonymous users
             if (!$scripto->isLoggedIn()) {
                 $this->_helper->redirector->goto('index');
             }
@@ -126,11 +145,11 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
         } catch (Scripto_Exception $e) {
             $this->_helper->flashMessenger($e->getMessage());
         }
-        
+
         $this->view->scripto = $scripto;
         $this->view->watchlist = $watchlist;
     }
-    
+
     /**
      * View recent changes to the document pages.
      */
@@ -142,11 +161,11 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
         } catch (Scripto_Exception $e) {
             $this->_helper->flashMessenger($e->getMessage());
         }
-        
+
         $this->view->scripto = $scripto;
         $this->view->recentChanges = $recentChanges;
     }
-    
+
     /**
      * View transcription interface.
      */
@@ -156,24 +175,30 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
             $scripto = ScriptoPlugin::getScripto();
             $doc = $scripto->getDocument($this->_getParam('item-id'));
             $doc->setPage($this->_getParam('file-id'));
-            
+
             // Set the File object.
             $file = $this->_helper->db->getTable('File')->find($doc->getPageId());
-            
+
             // Set the page HTML.
             $transcriptionPageHtml = Scripto::removeHtmlAttributes($doc->getTranscriptionPageHtml());
             $talkPageHtml = Scripto::removeHtmlAttributes($doc->getTalkPageHtml());
-            
+
             // Set all the document's pages.
             $pages = $doc->getPages();
-            
+
             // Set the pagination.
             $paginationUrls = array();
             foreach ($pages as $pageId => $pageName) {
+                // Custom pagination (page x of y).
+                $number_of_pages = count($pages);
+                $current_page_id = $doc->getPageId();
+                $paginationUrls['current_page_number'] = array_search($current_page_id, array_keys($pages)) + 1;
+                $paginationUrls['number_of_pages'] = count($pages);
+
                 if (isset($current)) {
                     $paginationUrls['next'] = $this->view->url(array(
-                        'action' => 'transcribe', 
-                        'item-id' => $doc->getId(), 
+                        'action' => 'transcribe',
+                        'item-id' => $doc->getId(),
                         'file-id' => $pageId
                     ), 'scripto_action_item_file');
                     break;
@@ -182,18 +207,18 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
                     $current = true;
                 } else {
                     $paginationUrls['previous'] = $this->view->url(array(
-                        'action' => 'transcribe', 
-                        'item-id' => $doc->getId(), 
+                        'action' => 'transcribe',
+                        'item-id' => $doc->getId(),
                         'file-id' => $pageId
                     ), 'scripto_action_item_file');
                 }
             }
-            
+
         } catch (Scripto_Exception $e) {
             $this->_helper->flashMessenger($e->getMessage());
             $this->_helper->redirector->goto('index');
         }
-        
+
         // Get the embed HTML for the Zoom.it image viewer.
         if ('zoomit' == get_option('scripto_image_viewer')) {
             $client = new Zend_Http_Client('http://api.zoom.it/v1/content');
@@ -201,7 +226,7 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
             $response = json_decode($client->request()->getBody(), true);
             $this->view->zoomIt = $response;
         }
-        
+
         $this->view->file = $file;
         $this->view->transcriptionPageHtml = $transcriptionPageHtml;
         $this->view->talkPageHtml = $talkPageHtml;
@@ -209,7 +234,7 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
         $this->view->scripto = $scripto;
         $this->view->doc = $doc;
     }
-    
+
     /**
      * View page history.
      */
@@ -219,7 +244,7 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
             $scripto = ScriptoPlugin::getScripto();
             $doc = $scripto->getDocument($this->_getParam('item-id'));
             $doc->setPage($this->_getParam('file-id'));
-            
+
             // Set the history depending on namespace index.
             if (1 == $this->_getParam('namespace-index')) {
                 $info = $doc->getTalkPageInfo();
@@ -232,14 +257,14 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
             $this->_helper->flashMessenger($e->getMessage());
             $this->_helper->redirector->goto('index');
         }
-        
+
         $this->view->scripto = $scripto;
         $this->view->doc = $doc;
         $this->view->info = $info;
         $this->view->history = $history;
         $this->view->namespaceIndex = $this->_getParam('namespace-index');
     }
-    
+
     /**
      * View a page revision.
      */
@@ -250,7 +275,7 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
             $doc = $scripto->getDocument($this->_getParam('item-id'));
             $doc->setPage($this->_getParam('file-id'));
             $revision = $scripto->getRevision($this->_getParam('revision-id'));
-            
+
             // Handle a revert.
             if ($this->_getParam('scripto-page-revert')) {
                 if (1 == $this->_getParam('namespace-index')) {
@@ -259,22 +284,22 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
                     $doc->editTranscriptionPage($revision['wikitext']);
                 }
                 $this->_helper->flashMessenger(__('Successfully reverted the page to a previous revision.'), 'success');
-                $this->_helper->redirector->gotoRoute(array('item-id' => $doc->getId(), 
-                                                            'file-id' => $doc->getPageId(), 
-                                                            'namespace-index' => $this->_getParam('namespace-index')), 
+                $this->_helper->redirector->gotoRoute(array('item-id' => $doc->getId(),
+                                                            'file-id' => $doc->getPageId(),
+                                                            'namespace-index' => $this->_getParam('namespace-index')),
                                                       'scripto_history');
             }
-            
+
         } catch (Scripto_Exception $e) {
             $this->_helper->flashMessenger($e->getMessage());
         }
-        
+
         $this->view->scripto = $scripto;
         $this->view->doc = $doc;
         $this->view->revision = $revision;
         $this->view->namespaceIndex = $this->_getParam('namespace-index');
     }
-    
+
     /**
      * View diff between page revisions.
      */
@@ -291,7 +316,7 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
             $this->_helper->flashMessenger($e->getMessage());
             $this->_helper->redirector->goto('index');
         }
-        
+
         $this->view->scripto = $scripto;
         $this->view->doc = $doc;
         $this->view->diff = $diff;
@@ -299,10 +324,10 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
         $this->view->oldRevision = $oldRevision;
         $this->view->revision = $revision;
     }
-    
+
     /**
      * Handle AJAX requests from the transcribe action.
-     * 
+     *
      * 403 Forbidden
      * 400 Bad Request
      * 500 Internal Server Error
@@ -311,34 +336,34 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
     {
         // Don't render the view script.
         $this->_helper->viewRenderer->setNoRender(true);
-        
+
         // Only allow AJAX requests.
         if (!$this->getRequest()->isXmlHttpRequest()) {
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
-        
+
         // Allow only valid pages.
         $pages = array('transcription', 'talk');
         if (!in_array($this->_getParam('page'), $pages)) {
             $this->getResponse()->setHttpResponseCode(400);
             return;
         }
-        
+
         // Only allow valid page actions.
-        $pageActions = array('edit', 'watch', 'unwatch', 'protect', 'unprotect', 
+        $pageActions = array('edit', 'watch', 'unwatch', 'protect', 'unprotect',
                              'import-page', 'import-document');
         if (!in_array($this->_getParam('page_action'), $pageActions)) {
             $this->getResponse()->setHttpResponseCode(400);
             return;
         }
-        
+
         // Handle the page action.
         try {
             $scripto = ScriptoPlugin::getScripto();
             $doc = $scripto->getDocument($this->_getParam('item_id'));
             $doc->setPage($this->_getParam('file_id'));
-            
+
             $body = null;
             switch ($this->_getParam('page_action')) {
                 case 'edit':
@@ -348,6 +373,10 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
                     } else {
                         $doc->editTranscriptionPage($this->_getParam('wikitext'));
                         $body = $doc->getTranscriptionPageHtml();
+                        $doc->setPageTranscriptionStatus();
+                        $doc->setDocumentTranscriptionProgress();
+                        $doc->setItemSortWeight();
+                        $doc->exportPage(get_option('scripto_import_type'));
                     }
                     break;
                 case 'watch':
@@ -360,7 +389,13 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
                     if ('talk' == $this->_getParam('page')) {
                         $doc->protectTalkPage();
                     } else {
+                        $doc->editTranscriptionPage($this->_getParam('wikitext'));
+                        $body = $doc->getTranscriptionPagePlainText();
                         $doc->protectTranscriptionPage();
+                        $doc->setPageTranscriptionStatus();
+                        $doc->setDocumentTranscriptionProgress();
+                        $doc->setItemSortWeight();
+                        $doc->exportPage(get_option('scripto_import_type'));
                     }
                     break;
                 case 'unprotect':
@@ -368,6 +403,9 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
                         $doc->unprotectTalkPage();
                     } else {
                         $doc->unprotectTranscriptionPage();
+                        $doc->setPageTranscriptionStatus();
+                        $doc->setDocumentTranscriptionProgress();
+                        $doc->setItemSortWeight();
                     }
                     break;
                 case 'import-page':
@@ -380,7 +418,7 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
                     $this->getResponse()->setHttpResponseCode(400);
                     return;
              }
-            
+
             $this->getResponse()->setBody($body);
         } catch (Scripto_Exception $e) {
             $this->getResponse()->setHttpResponseCode(500);

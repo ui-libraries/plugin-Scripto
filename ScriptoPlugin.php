@@ -1,14 +1,14 @@
 <?php
 /**
- * Collection Tree
- * 
- * @copyright Copyright 2007-2012 Roy Rosenzweig Center for History and New Media
+ * Scripto plugin
+ *
+ * @copyright Copyright 2007-2013 Roy Rosenzweig Center for History and New Media
  * @license http://www.gnu.org/licenses/gpl-3.0.txt GNU GPLv3
  */
 
 /**
  * The Scripto plugin.
- * 
+ *
  * @package Omeka\Plugins\Scripto
  */
 class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
@@ -17,147 +17,164 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
      * The name of the Scripto element set.
      */
     const ELEMENT_SET_NAME = 'Scripto';
-    
+
+    /**
+     * @var array This plugin's hooks.
+     */
     protected $_hooks = array(
-        'initialize', 
-        'install', 
-        'uninstall', 
-        'uninstall_message', 
-        'define_routes', 
-        'config_form', 
-        'config', 
-        'public_items_show', 
-        'admin_items_show', 
+        'initialize',
+        'install',
+        'uninstall',
+        'uninstall_message',
+        'define_routes',
+        'config_form',
+        'config',
+        'public_items_show',
+        'admin_items_show',
     );
-    
+
+    /**
+     * @var array This plugin's filter.
+     */
     protected $_filters = array(
-        'admin_navigation_main', 
-        'public_navigation_main', 
+        'admin_navigation_main',
+        'public_navigation_main',
     );
-    
+
+    /**
+     * @var array This plugin's options.
+     */
+    protected $_options = array(
+        'scripto_mediawiki_api_url' => '',
+        'scripto_image_viewer' => null,
+        'scripto_use_google_docs_viewer' => '',
+        'scripto_import_type' => null,
+        'scripto_home_page_text' => '<p>Scripto</p>',
+    );
+
     /**
      * @var MIME types compatible with OpenLayers.
      */
     public static $fileIdentifiersOpenLayers = array(
         'mimeTypes' => array(
             // gif
-            'image/gif', 'image/x-xbitmap', 'image/gi_', 
+            'image/gif', 'image/x-xbitmap', 'image/gi_',
             // jpg
-            'image/jpeg', 'image/jpg', 'image/jpe_', 'image/pjpeg', 
-            'image/vnd.swiftview-jpeg', 
+            'image/jpeg', 'image/jpg', 'image/jpe_', 'image/pjpeg',
+            'image/vnd.swiftview-jpeg',
             // png
-            'image/png', 'application/png', 'application/x-png', 
+            'image/png', 'application/png', 'application/x-png',
             // bmp
-            'image/bmp', 'image/x-bmp', 'image/x-bitmap', 
-            'image/x-xbitmap', 'image/x-win-bitmap', 
-            'image/x-windows-bmp', 'image/ms-bmp', 'image/x-ms-bmp', 
-            'application/bmp', 'application/x-bmp', 
-            'application/x-win-bitmap', 
-        ), 
+            'image/bmp', 'image/x-bmp', 'image/x-bitmap',
+            'image/x-xbitmap', 'image/x-win-bitmap',
+            'image/x-windows-bmp', 'image/ms-bmp', 'image/x-ms-bmp',
+            'application/bmp', 'application/x-bmp',
+            'application/x-win-bitmap',
+        ),
         'fileExtensions' => array(
-            'gif', 'jpeg', 'jpg', 'jpe', 'png', 'bmp', 
-        ), 
+            'gif', 'jpeg', 'jpg', 'jpe', 'png', 'bmp',
+        ),
     );
-    
+
     /**
      * @var MIME types compatible with Zoom.it.
      */
     public static $fileIdentifiersZoomIt = array(
         'mimeTypes' => array(
             // gif
-            'image/gif', 'image/x-xbitmap', 'image/gi_', 
+            'image/gif', 'image/x-xbitmap', 'image/gi_',
             // jpg
-            'image/jpeg', 'image/jpg', 'image/jpe_', 'image/pjpeg', 
-            'image/vnd.swiftview-jpeg', 
+            'image/jpeg', 'image/jpg', 'image/jpe_', 'image/pjpeg',
+            'image/vnd.swiftview-jpeg',
             // png
-            'image/png', 'application/png', 'application/x-png', 
+            'image/png', 'application/png', 'application/x-png',
             // bmp
-            'image/bmp', 'image/x-bmp', 'image/x-bitmap', 
-            'image/x-xbitmap', 'image/x-win-bitmap', 
-            'image/x-windows-bmp', 'image/ms-bmp', 'image/x-ms-bmp', 
-            'application/bmp', 'application/x-bmp', 
-            'application/x-win-bitmap', 
+            'image/bmp', 'image/x-bmp', 'image/x-bitmap',
+            'image/x-xbitmap', 'image/x-win-bitmap',
+            'image/x-windows-bmp', 'image/ms-bmp', 'image/x-ms-bmp',
+            'application/bmp', 'application/x-bmp',
+            'application/x-win-bitmap',
             // ico
-            'image/ico', 'image/x-icon', 'application/ico', 'application/x-ico', 
-            'application/x-win-bitmap', 'image/x-win-bitmap', 
+            'image/ico', 'image/x-icon', 'application/ico', 'application/x-ico',
+            'application/x-win-bitmap', 'image/x-win-bitmap',
             // tiff
             'image/tiff',
-        ), 
+        ),
         'fileExtensions' => array(
-            'gif', 'jpeg', 'jpg', 'jpe', 'png', 'bmp', 'ico', 'tif', 'tiff', 
-        ), 
+            'gif', 'jpeg', 'jpg', 'jpe', 'png', 'bmp', 'ico', 'tif', 'tiff',
+        ),
     );
-    
+
     /**
      * @var MIME types compatible with Google Docs viewer.
      */
     public static $fileIdentifiersGoogleDocs = array(
         'mimeTypes' => array(
             // pdf
-            'application/pdf', 'application/x-pdf', 
-            'application/acrobat', 'applications/vnd.pdf', 'text/pdf', 
-            'text/x-pdf', 
+            'application/pdf', 'application/x-pdf',
+            'application/acrobat', 'applications/vnd.pdf', 'text/pdf',
+            'text/x-pdf',
             // docx
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             // doc
-            'application/msword', 'application/doc', 'appl/text', 
-            'application/vnd.msword', 'application/vnd.ms-word', 
-            'application/winword', 'application/word', 'application/vnd.ms-office', 
-            'application/x-msw6', 'application/x-msword', 
+            'application/msword', 'application/doc', 'appl/text',
+            'application/vnd.msword', 'application/vnd.ms-word',
+            'application/winword', 'application/word', 'application/vnd.ms-office',
+            'application/x-msw6', 'application/x-msword',
             // ppt
-            'application/vnd.ms-powerpoint', 'application/mspowerpoint', 
-            'application/ms-powerpoint', 'application/mspowerpnt', 
-            'application/vnd-mspowerpoint', 'application/powerpoint', 
-            'application/x-powerpoint', 'application/x-m', 
+            'application/vnd.ms-powerpoint', 'application/mspowerpoint',
+            'application/ms-powerpoint', 'application/mspowerpnt',
+            'application/vnd-mspowerpoint', 'application/powerpoint',
+            'application/x-powerpoint', 'application/x-m',
             // pptx
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation', 
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
             // xls
-            'application/vnd.ms-excel', 'application/msexcel', 
-            'application/x-msexcel', 'application/x-ms-excel', 
-            'application/vnd.ms-excel', 'application/x-excel', 
-            'application/x-dos_ms_excel', 'application/xls', 
+            'application/vnd.ms-excel', 'application/msexcel',
+            'application/x-msexcel', 'application/x-ms-excel',
+            'application/vnd.ms-excel', 'application/x-excel',
+            'application/x-dos_ms_excel', 'application/xls',
             // xlsx
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             // tiff
-            'image/tiff', 
+            'image/tiff',
             // ps, ai
-            'application/postscript', 'application/ps', 
-            'application/x-postscript', 'application/x-ps', 
-            'text/postscript', 'application/x-postscript-not-eps', 
+            'application/postscript', 'application/ps',
+            'application/x-postscript', 'application/x-ps',
+            'text/postscript', 'application/x-postscript-not-eps',
             // eps
-            'application/eps', 'application/x-eps', 'image/eps', 
-            'image/x-eps', 
+            'application/eps', 'application/x-eps', 'image/eps',
+            'image/x-eps',
             // psd
-            'image/vnd.adobe.photoshop', 'image/photoshop', 
-            'image/x-photoshop', 'image/psd', 'application/photoshop', 
-            'application/psd', 'zz-application/zz-winassoc-psd', 
+            'image/vnd.adobe.photoshop', 'image/photoshop',
+            'image/x-photoshop', 'image/psd', 'application/photoshop',
+            'application/psd', 'zz-application/zz-winassoc-psd',
             // dxf
-            'application/dxf', 'application/x-autocad', 
-            'application/x-dxf', 'drawing/x-dxf', 'image/vnd.dxf', 
-            'image/x-autocad', 'image/x-dxf', 
-            'zz-application/zz-winassoc-dxf', 
+            'application/dxf', 'application/x-autocad',
+            'application/x-dxf', 'drawing/x-dxf', 'image/vnd.dxf',
+            'image/x-autocad', 'image/x-dxf',
+            'zz-application/zz-winassoc-dxf',
             // xvg
-            'image/svg+xml', 
+            'image/svg+xml',
             // xps
             'application/vnd.ms-xpsdocument',
-        ), 
+        ),
         'fileExtensions' => array(
-            'pdf', 
-            'docx', 
-            'doc', 'dot', 
-            'ppt', 'pps', 'pot', 
-            'pptx', 
-            'xls', 'xlm', 'xla', 'xlc', 'xlt', 'xlw', 
-            'xlsx', 
-            'tiff', 'tif', 
-            'ai', 'eps', 'ps', 
-            'psd', 
-            'dxf', 
-            'xvg', 
-            'xps', 
-        ), 
+            'pdf',
+            'docx',
+            'doc', 'dot',
+            'ppt', 'pps', 'pot',
+            'pptx',
+            'xls', 'xlm', 'xla', 'xlc', 'xlt', 'xlw',
+            'xlsx',
+            'tiff', 'tif',
+            'ai', 'eps', 'ps',
+            'psd',
+            'dxf',
+            'xvg',
+            'xps',
+        ),
     );
-    
+
     /**
      * Initialize Scripto.
      */
@@ -166,7 +183,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         // Add translation.
         add_translation_source(dirname(__FILE__) . '/languages');
     }
-    
+
     /**
      * Install Scripto.
      */
@@ -179,15 +196,27 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
                  . 'that element set to install this plugin.', self::ELEMENT_SET_NAME)
             );
         }
-        
-        $elementSetMetadata = array('name' => self::ELEMENT_SET_NAME);
+
+        $elementSetMetadata = array(
+            'name' => self::ELEMENT_SET_NAME,
+            'description' => 'Manages transcriptions of items and files',
+            'record_type' => NULL,
+        );
         $elements = array(
-            array('name' => 'Transcription', 
-                  'description' => 'A written representation of a document.')
+            array('name' => 'Transcription',
+                  'description' => 'A written representation of a document.'),
+            array('name' => 'Status',
+                  'description' => 'The current transcription status of a document.'),
+            array('name' => 'Percent Needs Review',
+                  'description' => 'The percentage of pages with Needs Review status.'),
+            array('name' => 'Percent Completed',
+                  'description' => 'The percentage of pages with Completed status.')
         );
         insert_element_set($elementSetMetadata, $elements);
+
+        $this->_installOptions();
     }
-    
+
     /**
      * Uninstall Scripto.
      */
@@ -195,38 +224,34 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
     {
         // Delete the Scripto element set.
         $this->_db->getTable('ElementSet')->findByName(self::ELEMENT_SET_NAME)->delete();
-        
+
         // Delete options that are specific to Scripto.
-        delete_option('scripto_mediawiki_api_url');
-        delete_option('scripto_image_viewer');
-        delete_option('scripto_use_google_docs_viewer');
-        delete_option('scripto_import_type');
-        delete_option('scripto_home_page_text');
+        $this->_uninstallOptions();
     }
-    
+
     /**
      * Appends a warning message to the uninstall confirmation page.
      */
     public function hookUninstallMessage()
     {
         echo '<p>' . __(
-            '%1$sWarning%2$s: This will permanently delete the "%3$s" element set and ' 
-          . 'all transcriptions imported from MediaWiki. You may deactivate this ' 
-          . 'plugin if you do not want to lose data. Uninstalling this plugin will ' 
-          . 'not affect your MediaWiki database in any way.', 
+            '%1$sWarning%2$s: This will permanently delete the "%3$s" element set and '
+          . 'all transcriptions imported from MediaWiki. You may deactivate this '
+          . 'plugin if you do not want to lose data. Uninstalling this plugin will '
+          . 'not affect your MediaWiki database in any way.',
             '<strong>', '</strong>', self::ELEMENT_SET_NAME) . '</p>';
     }
-    
+
     /**
      * Define routes.
-     * 
+     *
      * @param Zend_Controller_Router_Rewrite $router
      */
     public function hookDefineRoutes($args)
     {
         $args['router']->addConfig(new Zend_Config_Ini(dirname(__FILE__) . '/routes.ini', 'routes'));
     }
-    
+
     /**
      * Render the config form.
      */
@@ -245,34 +270,35 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         if (is_null($importType)) {
             $importType = 'html';
         }
-        
+
         echo get_view()->partial(
-            'plugins/scripto-config-form.php', 
-            array('image_viewer' => $imageViewer, 
-                  'use_google_docs_viewer' => $useGoogleDocsViewer,  
+            'plugins/scripto-config-form.php',
+            array('image_viewer' => $imageViewer,
+                  'use_google_docs_viewer' => $useGoogleDocsViewer,
                   'import_type' => $importType)
         );
     }
-    
+
     /**
      * Handle a submitted config form.
      */
-    public function hookConfig()
+    public function hookConfig($args)
     {
+        $post = $args['post'];
+
         // Validate the MediaWiki API URL.
-        if (!Scripto::isValidApiUrl($_POST['scripto_mediawiki_api_url'])) {
+        if (!Scripto::isValidApiUrl(trim($post['scripto_mediawiki_api_url']))) {
             throw new Omeka_Plugin_Installer_Exception('Invalid MediaWiki API URL');
         }
-        
+
         // Set options that are specific to Scripto.
-        set_option('scripto_mediawiki_api_url', $_POST['scripto_mediawiki_api_url']);
-        set_option('scripto_image_viewer', $_POST['scripto_image_viewer']);
-        set_option('scripto_use_google_docs_viewer', $_POST['scripto_use_google_docs_viewer']);
-        set_option('scripto_import_type', $_POST['scripto_import_type']);
-        set_option('scripto_home_page_text', $_POST['scripto_home_page_text']);
+        set_option('scripto_mediawiki_api_url', trim($post['scripto_mediawiki_api_url']));
+        set_option('scripto_image_viewer', $post['scripto_image_viewer']);
+        set_option('scripto_use_google_docs_viewer', $post['scripto_use_google_docs_viewer']);
+        set_option('scripto_import_type', $post['scripto_import_type']);
+        set_option('scripto_home_page_text', trim($post['scripto_home_page_text']));
     }
-    
-    
+
     /**
      * Append the transcribe link to the public items show page.
      */
@@ -280,7 +306,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
     {
         $this->_appendToItemsShow();
     }
-    
+
     /**
      * Append the transcribe link to the admin items show page.
      */
@@ -288,10 +314,10 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
     {
         $this->_appendToItemsShow();
     }
-    
+
     /**
      * Add Scripto to the admin navigation.
-     * 
+     *
      * @param array $nav
      * @return array
      */
@@ -300,10 +326,10 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         $nav[] = array('label' => __('Scripto'), 'uri' => url('scripto'));
         return $nav;
     }
-    
+
     /**
      * Add Scripto to the public navigation.
-     * 
+     *
      * @param array $nav
      * @return array
      */
@@ -312,7 +338,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         $nav[] = array('label' => __('Scripto'), 'uri' => url('scripto'));
         return $nav;
     }
-    
+
     /**
      * Append the transcribe link to the items show page.
      */
@@ -329,18 +355,18 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
 <h2><?php echo __('Transcribe This Item'); ?></h2>
 <ol>
     <?php foreach ($doc->getPages() as $pageId => $pageName): ?>
-    <li><a href="<?php echo url(array('action' => 'transcribe', 
-                                      'item-id' => $item->id, 
-                                      'file-id' => $pageId), 
+    <li><a href="<?php echo url(array('action' => 'transcribe',
+                                      'item-id' => $item->id,
+                                      'file-id' => $pageId),
                                 'scripto_action_item_file'); ?>" id="scripto-transcribe-item"><?php echo $pageName; ?></a></li>
     <?php endforeach; ?>
 </ol>
 <?php
     }
-    
+
     /**
      * add_file_display_callback() callback for OpenLayers.
-     * 
+     *
      * @see Scripto_IndexController::init()
      * @param File $file
      */
@@ -348,7 +374,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
     {
         $imageUrl = $file->getWebPath('original');
         $imageSize = ScriptoPlugin::getImageSize($imageUrl, 250);
-        
+
 ?>
 <script type="text/javascript">
 jQuery(document).ready(function() {
@@ -366,10 +392,10 @@ jQuery(document).ready(function() {
 <div id="scripto-openlayers" style="height: 400px; border: 1px grey solid; margin-bottom: 12px;"></div>
 <?php
     }
-    
+
     /**
      * add_file_display_callback() callback for Zoom.it.
-     * 
+     *
      * @see Scripto_IndexController::init()
      * @param File $file
      */
@@ -377,24 +403,24 @@ jQuery(document).ready(function() {
     {
         echo get_view()->zoomIt['embedHtml'];
     }
-    
+
     /**
      * add_file_display_callback() callback for Google Docs.
-     * 
+     *
      * @see Scripto_IndexController::init()
      * @param File $file
      */
     public static function googleDocs($file)
     {
         $uri = Zend_Uri::factory('http://docs.google.com/viewer');
-        $uri->setQuery(array('url' => $file->getWebPath('original'), 
+        $uri->setQuery(array('url' => $file->getWebPath('original'),
                              'embedded' => 'true'));
         echo '<iframe src="' . $uri->getUri() . '" width="500" height="600" style="border: none;"></iframe>';
     }
-    
+
     /**
      * Convenience method to get the Scripto object.
-     * 
+     *
      * @param string $apiUrl
      */
     public static function getScripto($apiUrl = null)
@@ -402,16 +428,16 @@ jQuery(document).ready(function() {
         if (null === $apiUrl) {
             $apiUrl = get_option('scripto_mediawiki_api_url');
         }
-        
+
         return new Scripto(new ScriptoAdapterOmeka, array('api_url' => $apiUrl));
     }
-    
+
     /**
      * Return a truncated string with left and right padding.
-     * 
-     * Primarily used for truncating long document page names that would 
+     *
+     * Primarily used for truncating long document page names that would
      * otherwise break tables.
-     * 
+     *
      * @param string $str The string to truncate.
      * @param int $length The trancate length.
      * @param string $default The string to return if the string is empty.
@@ -429,10 +455,10 @@ jQuery(document).ready(function() {
         $padding = floor($length / 2);
         return preg_replace('/^(.{' . $padding . '}).*(.{' . $padding . '})$/', '$1... $2', $str);
     }
-    
+
     /**
      * Get dimensions of the provided image.
-     * 
+     *
      * @param string $filename URI to file.
      * @param int $width Width constraint.
      * @return array

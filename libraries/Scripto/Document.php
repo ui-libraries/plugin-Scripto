@@ -16,110 +16,110 @@ require_once 'Scripto.php';
 require_once 'Scripto/Exception.php';
 
 /**
- * Represents a Scripto document. Serves as a connector object between the 
+ * Represents a Scripto document. Serves as a connector object between the
  * external system API and MediaWiki API.
- * 
+ *
  * @package Scripto
  */
 class Scripto_Document
 {
     /**
-     * The prefix used in the base title to keep MediaWiki from capitalizing the 
+     * The prefix used in the base title to keep MediaWiki from capitalizing the
      * first character.
      */
     const BASE_TITLE_PREFIX = '.';
-    
+
     /**
-     * The delimiter used to separate the document and page IDs in the base 
+     * The delimiter used to separate the document and page IDs in the base
      * title.
      */
     const BASE_TITLE_DELIMITER = '.';
-    
+
     /**
      * The maximum bytes MediaWiki allows for a page title.
      */
     const TITLE_BYTE_LIMIT = 256;
-    
+
     /**
      * @var string The document ID provided by the external system.
      */
     protected $_id;
-    
+
     /**
-     * @var Scripto_Adapter_Interface The adapter object for the external 
+     * @var Scripto_Adapter_Interface The adapter object for the external
      * system.
      */
     protected $_adapter;
-    
+
     /**
      * @var Scripto_Service_MediaWiki The MediaWiki service object.
      */
     protected $_mediawiki;
-    
+
     /**
      * @var string The document title provided by the external system.
      */
     protected $_title;
-    
+
     /**
      * @var string The document page name provided by the external system.
      */
     protected $_pageName;
-    
+
     /**
      * @var string The document page ID provided by the external system.
      */
     protected $_pageId;
-    
+
     /**
-     * @var string The base title (i.e. without a namespace) of the 
+     * @var string The base title (i.e. without a namespace) of the
      * corresponding MediaWiki page.
      */
     protected $_baseTitle;
-    
+
     /**
      * @var array Information about the current transcription page.
      */
     protected $_transcriptionPageInfo;
-    
+
     /**
      * @var array Information about the current talk page.
      */
     protected $_talkPageInfo;
-    
+
     /**
      * Construct the Scripto document object.
-     * 
+     *
      * @param string|int $id The unique document identifier.
      * @param Scripto_Adapter_Interface $adapter The adapter object.
      * @param array|Scripto_Service_MediaWiki $mediawiki {@link Scripto::mediawikiFactory()}
      */
-    public function __construct($id, 
-                                Scripto_Adapter_Interface $adapter, 
+    public function __construct($id,
+                                Scripto_Adapter_Interface $adapter,
                                 Scripto_Service_MediaWiki $mediawiki)
     {
         // Document IDs must not be empty strings, null, or false.
         if (!strlen($id) || is_null($id) || false === $id) {
             throw new Scripto_Exception('The document ID is invalid.');
         }
-        
+
         // Check if the document exists.
         if (!$adapter->documentExists($id)) {
             throw new Scripto_Exception("The specified document does not exist: {$this->_id}");
         }
-        
+
         $this->_id = $id;
         $this->_adapter = $adapter;
         $this->_mediawiki = $mediawiki;
         $this->_title = $this->_adapter->getDocumentTitle($id);
     }
-    
+
     /**
      * Set the current document page.
-     * 
-     * Sets the current page ID, the base title used by MediaWiki, and 
+     *
+     * Sets the current page ID, the base title used by MediaWiki, and
      * information about the MediaWiki transcription and talk pages.
-     * 
+     *
      * @param string|null $pageId The unique page identifier.
      */
     public function setPage($pageId)
@@ -128,39 +128,46 @@ class Scripto_Document
         if (null === $pageId || false === $pageId) {
             $pageId = $this->getFirstPageId();
         }
-        
+
         // Check if the page exists.
         if (!$this->_adapter->documentPageExists($this->_id, $pageId)) {
             throw new Scripto_Exception("The specified page does not exist: $pageId");
         }
-        
+
         // Mint the page title used by MediaWiki.
         $baseTitle = self::encodeBaseTitle($this->_id, $pageId);
-        
+
         // Check if the base title is under the maximum character length.
         if (self::TITLE_BYTE_LIMIT < strlen($this->_baseTitle)) {
             throw new Scripto_Exception('The document ID and/or page ID are too long to set the provided page.');
         }
-        
+
         // Set information about the transcription and talk pages.
         $this->_transcriptionPageInfo = $this->_getPageInfo($baseTitle);
         $this->_talkPageInfo = $this->_getPageInfo('Talk:' . $baseTitle);
-        
+
         $this->_pageId = $pageId;
         $this->_pageName = $this->_adapter->getDocumentPageName($this->_id, $pageId);
         $this->_baseTitle = $baseTitle;
+
+        // Initialize wiki page text on setPage() of the page.
+        if ($pageText = $this->_adapter->getDocumentPageTranscription($this->_pageId)) {
+           if (!$this->isCreatedPage()) {
+               $this->editTranscriptionPage($pageText);
+           }
+        }
     }
-    
+
     /**
      * Get this document's ID.
-     * 
+     *
      * @return string|int
      */
     public function getId()
     {
         return $this->_id;
     }
-    
+
     /**
      * Get this document's title.
      */
@@ -168,7 +175,7 @@ class Scripto_Document
     {
         return $this->_title;
     }
-    
+
     /**
      * Get this document page's name.
      */
@@ -176,20 +183,20 @@ class Scripto_Document
     {
         return $this->_pageName;
     }
-    
+
     /**
      * Get this document's current page ID.
-     * 
+     *
      * @return string|int
      */
     public function getPageId()
     {
         return $this->_pageId;
     }
-    
+
     /**
      * Get this document's current base title.
-     * 
+     *
      * @return string
      */
     public function getBaseTitle()
@@ -199,10 +206,44 @@ class Scripto_Document
         }
         return $this->_baseTitle;
     }
-    
+
+    /**
+     * Get transcription status of the current MediaWiki transcription page.
+     *
+     * @return string 'Not Started'|'Needs Review'|'Completed'
+     */
+    public function getTranscriptionStatus()
+    {
+        $baseTitle = $this->getBaseTitle();
+        $params = array('inprop' => 'protection|length|new');
+        $response = $this->_mediawiki->getInfo($baseTitle, $params);
+        $page = current($response['query']['pages']);
+        $pageInfo = array(
+            'protections' => isset($page['protection']) ? $page['protection'] : null,
+            'length' => isset($page['length']) ? $page['length'] : null,
+            'new' => isset($page['new']),
+        );
+        if ($pageInfo['protections'] != null) {
+            foreach ($pageInfo['protections'] as $protection) {
+                if ('edit' == $protection['type'] || 'create' == $protection['type']) {
+                    $status = 'Completed';
+                } elseif ($pageInfo['length'] >= 1) {
+                    $status = 'Needs Review';
+                } else {
+                    $status = 'Not Started';
+                }
+            }
+        } elseif ($pageInfo['length'] >= 1) {
+            $status = 'Needs Review';
+        } else {
+            $status = 'Not Started';
+        }
+        return $status;
+    }
+
     /**
      * Get information about the current MediaWiki transcription page.
-     * 
+     *
      * @return array
      */
     public function getTranscriptionPageInfo()
@@ -212,10 +253,10 @@ class Scripto_Document
         }
         return $this->_transcriptionPageInfo;
     }
-    
+
     /**
      * Get information about the current MediaWiki talk page.
-     * 
+     *
      * @return array
      */
     public function getTalkPageInfo()
@@ -225,10 +266,10 @@ class Scripto_Document
         }
         return $this->_talkPageInfo;
     }
-    
+
     /**
      * Get all of this document's pages from the adapter.
-     * 
+     *
      * @uses Scripto_Adapter_Interface::getDocumentPages()
      * @return array
      */
@@ -236,10 +277,10 @@ class Scripto_Document
     {
         return (array) $this->_adapter->getDocumentPages($this->_id);
     }
-    
+
     /**
      * Get this document's first page ID from the adapter.
-     * 
+     *
      * @uses Scripto_Adapter_Interface::getDocumentFirstPageId()
      * @return array
      */
@@ -247,10 +288,10 @@ class Scripto_Document
     {
         return $this->_adapter->getDocumentFirstPageId($this->_id);
     }
-    
+
     /**
      * Get this document's current page file URL from the adapter.
-     * 
+     *
      * @uses Scripto_Adapter_Interface::getDocumentPageFileUrl()
      * @return string
      */
@@ -261,10 +302,10 @@ class Scripto_Document
         }
         return $this->_adapter->getDocumentPageFileUrl($this->_id, $this->_pageId);
     }
-    
+
     /**
      * Get the MediaWiki URL for the current transcription page.
-     * 
+     *
      * @return string
      */
     public function getTranscriptionPageMediawikiUrl()
@@ -274,10 +315,10 @@ class Scripto_Document
         }
         return $this->_getPageMediawikiUrl($this->_baseTitle);
     }
-    
+
     /**
      * Get the MediaWiki URL for the current talk page.
-     * 
+     *
      * @return string
      */
     public function getTalkPageMediawikiUrl()
@@ -287,10 +328,10 @@ class Scripto_Document
         }
         return $this->_getPageMediawikiUrl('Talk:' . $this->_baseTitle);
     }
-    
+
     /**
      * Get the MediaWiki transcription page wikitext for the current page.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::getLatestRevisionWikitext()
      * @return string The transcription wikitext.
      */
@@ -301,10 +342,10 @@ class Scripto_Document
         }
         return $this->_mediawiki->getLatestRevisionWikitext($this->_baseTitle);
     }
-    
+
     /**
      * Get the MediaWiki talk page wikitext for the current page.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::getLatestRevisionWikitext()
      * @return string The talk wikitext.
      */
@@ -315,10 +356,10 @@ class Scripto_Document
         }
         return $this->_mediawiki->getLatestRevisionWikitext('Talk:' . $this->_baseTitle);
     }
-    
+
     /**
      * Get the MediaWiki transcription page HTML for the current page.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::getLatestRevisionHtml()
      * @return string The transcription HTML.
      */
@@ -329,10 +370,10 @@ class Scripto_Document
         }
         return $this->_mediawiki->getLatestRevisionHtml($this->_baseTitle);
     }
-    
+
     /**
      * Get the MediaWiki talk page HTML for the current page.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::getLatestRevisionHtml()
      * @return string The talk HTML.
      */
@@ -343,10 +384,10 @@ class Scripto_Document
         }
         return $this->_mediawiki->getLatestRevisionHtml('Talk:' . $this->_baseTitle);
     }
-    
+
     /**
      * Get the MediaWiki transcription page plain text for the current page.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::getLatestRevisionHtml()
      * @return string The transcription page plain text.
      */
@@ -357,10 +398,10 @@ class Scripto_Document
         }
         return html_entity_decode(strip_tags($this->_mediawiki->getLatestRevisionHtml($this->_baseTitle)));
     }
-    
+
     /**
      * Get the MediaWiki talk plain text for the current page.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::getLatestRevisionHtml()
      * @return string The talk plain text.
      */
@@ -371,10 +412,10 @@ class Scripto_Document
         }
         return html_entity_decode(strip_tags($this->_mediawiki->getLatestRevisionHtml('Talk:' . $this->_baseTitle)));
     }
-    
+
     /**
      * Get the MediaWiki transcription page revision history for the current page.
-     * 
+     *
      * @param int $limit The number of revisions to return.
      * @param int $startRevisionId The revision ID from which to start.
      * @return array
@@ -386,10 +427,10 @@ class Scripto_Document
         }
         return $this->_getPageHistory($this->_baseTitle, $limit, $startRevisionId);
     }
-    
+
     /**
      * Get the MediaWiki talk page revision history for the current page.
-     * 
+     *
      * @param int $limit The number of revisions to return.
      * @param int $startRevisionId The revision ID from which to start.
      * @return array
@@ -401,10 +442,10 @@ class Scripto_Document
         }
         return $this->_getPageHistory('Talk:' . $this->_baseTitle, $limit, $startRevisionId);
     }
-    
+
     /**
      * Determine if the current user can edit the MediaWiki transcription page.
-     * 
+     *
      * @return bool
      */
     public function canEditTranscriptionPage()
@@ -414,10 +455,10 @@ class Scripto_Document
         }
         return $this->_canEdit($this->_transcriptionPageInfo['protections']);
     }
-    
+
     /**
      * Determine if the current user can edit the MediaWiki talk page.
-     * 
+     *
      * @return bool
      */
     public function canEditTalkPage()
@@ -427,10 +468,10 @@ class Scripto_Document
         }
         return $this->_canEdit($this->_talkPageInfo['protections']);
     }
-    
+
     /**
      * Edit the MediaWiki transcription page for the current document.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::edit()
      * @param string $text The wikitext of the transcription.
      */
@@ -439,14 +480,14 @@ class Scripto_Document
         if (is_null($this->_pageId)) {
             throw new Scripto_Exception('The document page must be set before editing the transcription page.');
         }
-        $this->_mediawiki->edit($this->_baseTitle, 
-                                $text, 
+        $this->_mediawiki->edit($this->_baseTitle,
+                                $text,
                                 $this->_transcriptionPageInfo['edit_token']);
     }
-    
+
     /**
      * Edit the MediaWiki talk page for the current document.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::edit()
      * @param string $text The wikitext of the transcription.
      */
@@ -455,11 +496,11 @@ class Scripto_Document
         if (is_null($this->_pageId)) {
             throw new Scripto_Exception('The document page must be set before editing the talk page.');
         }
-        $this->_mediawiki->edit('Talk:' . $this->_baseTitle, 
-                                $text, 
+        $this->_mediawiki->edit('Talk:' . $this->_baseTitle,
+                                $text,
                                 $this->_talkPageInfo['edit_token']);
     }
-    
+
     /**
      * Protect the current transcription page.
      */
@@ -469,11 +510,11 @@ class Scripto_Document
             throw new Scripto_Exception('The document page must be set before protecting the transcription page.');
         }
         $this->_protectPage($this->_baseTitle, $this->_transcriptionPageInfo['protect_token']);
-        
+
         // Update information about this page.
         $this->_transcriptionPageInfo = $this->_getPageInfo($this->_baseTitle);
     }
-    
+
     /**
      * Protect the current talk page.
      */
@@ -483,11 +524,11 @@ class Scripto_Document
             throw new Scripto_Exception('The document page must be set before protecting the talk page.');
         }
         $this->_protectPage('Talk:' . $this->_baseTitle, $this->_talkPageInfo['protect_token']);
-        
+
         // Update information about this page.
         $this->_talkPageInfo = $this->_getPageInfo('Talk:' . $this->_baseTitle);
     }
-    
+
     /**
      * Unprotect the current transcription page.
      */
@@ -497,11 +538,11 @@ class Scripto_Document
             throw new Scripto_Exception('The document page must be set before unprotecting the transcription page.');
         }
         $this->_unprotectPage($this->_baseTitle, $this->_transcriptionPageInfo['protect_token']);
-        
+
         // Update information about this page.
         $this->_transcriptionPageInfo = $this->_getPageInfo($this->_baseTitle);
     }
-    
+
     /**
      * Unprotect the current talk page.
      */
@@ -511,16 +552,16 @@ class Scripto_Document
             throw new Scripto_Exception('The document page must be set before unprotecting the talk page.');
         }
         $this->_unprotectPage('Talk:' . $this->_baseTitle, $this->_talkPageInfo['protect_token']);
-        
+
         // Update information about this page.
         $this->_talkPageInfo = $this->_getPageInfo('Talk:' . $this->_baseTitle);
     }
-    
+
     /**
      * Watch the current page.
-     * 
+     *
      * Watching a transcription page implies watching its talk page.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::watch()
      */
     public function watchPage()
@@ -530,12 +571,12 @@ class Scripto_Document
         }
         $this->_mediawiki->watch($this->_baseTitle);
     }
-    
+
     /**
      * Unwatch the current page.
-     * 
+     *
      * Unwatching a transcription page implies unwatching its talk page.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::watch()
      */
     public function unwatchPage()
@@ -545,10 +586,20 @@ class Scripto_Document
         }
         $this->_mediawiki->watch($this->_baseTitle, null, array('unwatch' => true));
     }
-    
+
+    /**
+     * Determine if a page has been created
+     *
+     * @return bool
+     */
+    public function isCreatedPage()
+    {
+        return (boolean) $this->_mediawiki->pageCreated($this->_baseTitle);
+    }
+
     /**
      * Determine whether the current transcription page is edit protected.
-     * 
+     *
      * @return bool
      */
     public function isProtectedTranscriptionPage()
@@ -558,10 +609,10 @@ class Scripto_Document
         }
         return $this->_isProtectedPage($this->_transcriptionPageInfo['protections']);
     }
-    
+
     /**
      * Determine whether the current talk page is edit protected.
-     * 
+     *
      * @return bool
      */
     public function isProtectedTalkPage()
@@ -571,10 +622,10 @@ class Scripto_Document
         }
         return $this->_isProtectedPage($this->_talkPageInfo['protections']);
     }
-    
+
      /**
      * Determine whether the current user is watching the current page.
-     * 
+     *
      * @return bool
      */
     public function isWatchedPage()
@@ -584,11 +635,11 @@ class Scripto_Document
         }
         return $this->_transcriptionPageInfo['watched'];
     }
-    
+
     /**
-     * Determine whether all of this document's transcription pages were already 
+     * Determine whether all of this document's transcription pages were already
      * exported to the external system.
-     * 
+     *
      * @uses Scripto_Adapter_Interface::documentTranscriptionIsImported()
      * @return bool
      */
@@ -596,11 +647,11 @@ class Scripto_Document
     {
         return $this->_adapter->documentTranscriptionIsImported($this->_id);
     }
-    
+
     /**
-     * Determine whether the current transcription page was already exported to 
+     * Determine whether the current transcription page was already exported to
      * the external system.
-     * 
+     *
      * @uses Scripto_Adapter_Interface::documentPageTranscriptionIsImported()
      * @return bool
      */
@@ -611,13 +662,13 @@ class Scripto_Document
         }
         return $this->_adapter->documentPageTranscriptionIsImported($this->_id, $this->_pageId);
     }
-    
+
     /**
-     * Export the document page transcription to the external system by calling 
+     * Export the document page transcription to the external system by calling
      * the adapter.
-     * 
+     *
      * @uses Scripto_Adapter_Interface::importDocumentPageTranscription()
-     * @param string $type The type of text to set, valid options are 
+     * @param string $type The type of text to set, valid options are
      * plain_text, html, and wikitext.
      */
     public function exportPage($type = 'plain_text')
@@ -635,17 +686,17 @@ class Scripto_Document
             default:
                 throw new Scripto_Exception('The provided import type is invalid.');
         }
-        $this->_adapter->importDocumentPageTranscription($this->_id, 
-                                                         $this->_pageId, 
+        $this->_adapter->importDocumentPageTranscription($this->_id,
+                                                         $this->_pageId,
                                                          trim($text));
     }
-    
+
     /**
-     * Export the entire document transcription to the external system by 
+     * Export the entire document transcription to the external system by
      * calling the adapter.
-     * 
+     *
      * @uses Scripto_Adapter_Interface::importDocumentTranscription()
-     * @param string $type The type of text to set, valid options are 
+     * @param string $type The type of text to set, valid options are
      * plain_text, html, and wikitext.
      * @param string $pageDelimiter The delimiter used to stitch pages together.
      */
@@ -671,10 +722,100 @@ class Scripto_Document
         $text = implode($pageDelimiter, array_map('trim', $text));
         $this->_adapter->importDocumentTranscription($this->_id, trim($text));
     }
-    
+
+    /**
+     * Set the transcription status for the current page in the external system.
+     *
+     * @uses Scripto_Adapter_Interface::importPageTranscriptionStatus()
+     */
+    public function setPageTranscriptionStatus()
+    {
+        $status = $this->getTranscriptionStatus();
+        $this->_adapter->importPageTranscriptionStatus($this->_id, $this->_pageId, $status);
+    }
+
+    /**
+     * Get document transcription status counts
+     *
+     * @return array
+     */
+    public function getItemStatusCounts()
+    {
+        $doc = $this->_id;
+        $pages = $this->getPages();
+        $totalPages = count($pages);
+        // Counters for each status.
+        $completed = 0;
+        $partial = 0;
+        $notStarted = 0;
+        foreach ($pages as $pageId => $pageName) {
+            $status = $this->_adapter->documentPageTranscriptionStatus($pageId);
+            switch ($status) {
+                case 'Completed':
+                    $completed++;
+                    break;
+                case 'Needs Review':
+                    $partial++;
+                    break;
+                case 'Not Started':
+                    $notStarted++;
+                    break;
+                default:
+                    $notStarted++;
+                    break;
+            }
+        }
+        $counts = array(
+            'total' => $totalPages,
+            'completed' => $completed,
+            'partial' => $partial,
+            'notStarted' => $notStarted,
+        );
+        return $counts;
+    }
+
+    /**
+     * Set the transcription progress (percent completed, percent needs review)
+     * for the document in the external system.
+     *
+     * @uses Scripto_Adapter_Interface::importDocumentTranscriptionProgress()
+     */
+    public function setDocumentTranscriptionProgress()
+    {
+        $counts = $this->getItemStatusCounts();
+        // Percent of pages 'Needs Review'.
+        $needsReview = strval(number_format((($counts['partial'] / $counts['total']) * 100), 0));
+        // Percent of pages 'Completed'.
+        $completed = strval(number_format((($counts['completed'] / $counts['total']) * 100), 0));
+        $this->_adapter->importDocumentTranscriptionProgress($this->_id, $completed, $needsReview);
+    }
+
+    /**
+     * Set the sort weight for the item based on percent completed and percent needs review.
+     *
+     * @uses Scripto_Adapter_Interface::importItemsortWeight()
+     */
+    public function setItemSortWeight()
+    {
+        $counts = $this->getItemStatusCounts();
+        // Calculate inverse percents needs review and completed.
+        $needsReview = number_format(((100 -($counts['partial'] / $counts['total']) * 100)), 0);
+        $completed = number_format(((100 - ($counts['completed'] / $counts['total']) * 100)), 0);
+        // Calculate percent needs review + completed.
+        $total = (100 - $needsReview) + (100 - $completed);
+        // Zerofill all three numbers.
+        $needsReview = str_pad($needsReview, 3, '0', STR_PAD_LEFT);
+        $completed = str_pad($completed, 3, '0', STR_PAD_LEFT);
+        $total = str_pad($total, 3, '0', STR_PAD_LEFT);
+        // Concatenate all three numbers for the 9 digit sort weight.
+        $weight = $total . $needsReview;
+        // Save to item-level record.
+        $this->_adapter->importItemSortWeight($this->_id, $weight);
+    }
+
     /**
      * Determine if the current user can edit the specified MediaWiki page.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::getUserInfo()
      * @param array $pageProtections
      * @return bool
@@ -682,44 +823,44 @@ class Scripto_Document
     protected function _canEdit(array $pageProtections)
     {
         $userInfo = $this->_mediawiki->getUserInfo('rights');
-        
+
         // Users without edit rights cannot edit pages.
         if (!in_array('edit', $userInfo['query']['userinfo']['rights'])) {
             return false;
         }
-        
+
         // Users with edit rights can edit unprotected pages.
         if (empty($pageProtections)) {
             return true;
         }
-        
+
         // Iterate the page protections.
         foreach ($pageProtections as $pageProtection) {
-            
+
             // The page is edit-protected.
             if ('edit' == $pageProtection['type']) {
-                
+
                 // Users with edit and protect rights can edit protected pages.
                 if (in_array('protect', $userInfo['query']['userinfo']['rights'])) {
                     return true;
-                
-                // Users with edit but without protect rights cannot edit 
+
+                // Users with edit but without protect rights cannot edit
                 // protected pages.
                 } else {
                     return false;
                 }
             }
         }
-        
+
         // Users with edit rights can edit pages that are not edit-protected.
         return true;
     }
-    
+
     /**
      * Determine whether the provided protections contain an edit protection.
-     * 
+     *
      * @param array $pageProtections The page protections from the page info:
-     * {@link Scripto_Document::$_transcriptionPageInfo} or 
+     * {@link Scripto_Document::$_transcriptionPageInfo} or
      * {@link Scripto_Document::$_talkPageInfo}.
      * @return bool
      */
@@ -729,7 +870,7 @@ class Scripto_Document
         if (empty($pageProtections)) {
             return false;
         }
-        
+
         // Iterate the page protections.
         foreach ($pageProtections as $pageProtection) {
             // The page is edit protected.
@@ -737,14 +878,14 @@ class Scripto_Document
                 return true;
             }
         }
-        
+
         // There are no edit protections.
         return false;
     }
-    
+
     /**
      * Protect the specified page.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::protect()
      * @param string $title
      * @param string $protectToken
@@ -758,10 +899,10 @@ class Scripto_Document
         }
         $this->_mediawiki->protect($title, $protections, $protectToken);
     }
-    
+
     /**
      * Unprotect the specified page.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::protect()
      * @param string $title
      * @param string $protectToken
@@ -775,10 +916,10 @@ class Scripto_Document
         }
         $this->_mediawiki->protect($title, $protections, $protectToken);
     }
-    
+
     /**
      * Get the MediaWiki URL for the specified page.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::getSiteInfo()
      * @param string $title
      * @return string
@@ -786,47 +927,47 @@ class Scripto_Document
     protected function _getPageMediawikiUrl($title)
     {
         $siteInfo = $this->_mediawiki->getSiteInfo();
-        return $siteInfo['query']['general']['server'] 
+        return $siteInfo['query']['general']['server']
              . str_replace('$1', $title, $siteInfo['query']['general']['articlepath']);
     }
-    
+
     /**
      * Get information for the specified page.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::getInfo()
      * @param string $title
      * @return array
      */
     protected function _getPageInfo($title)
     {
-        $params = array('inprop' => 'protection|talkid|subjectid|url|watched', 
+        $params = array('inprop' => 'protection|talkid|subjectid|url|watched',
                         'intoken' => 'edit|move|delete|protect');
         $response = $this->_mediawiki->getInfo($title, $params);
         $page = current($response['query']['pages']);
-        $pageInfo = array('page_id'            => isset($page['pageid']) ? $page['pageid'] : null, 
-                          'namespace_index'    => isset($page['ns']) ? $page['ns'] : null, 
-                          'mediawiki_title'    => isset($page['title']) ? $page['title'] : null, 
-                          'last_revision_id'   => isset($page['lastrevid']) ? $page['lastrevid'] : null, 
-                          'counter'            => isset($page['counter']) ? $page['counter'] : null, 
-                          'length'             => isset($page['length']) ? $page['length'] : null, 
-                          'start_timestamp'    => isset($page['starttimestamp']) ? $page['starttimestamp'] : null, 
-                          'edit_token'         => isset($page['edittoken']) ? $page['edittoken'] : null, 
-                          'move_token'         => isset($page['movetoken']) ? $page['movetoken'] : null, 
-                          'delete_token'       => isset($page['deletetoken']) ? $page['deletetoken'] : null, 
-                          'protect_token'      => isset($page['protecttoken']) ? $page['protecttoken'] : null, 
-                          'protections'        => isset($page['protection']) ? $page['protection'] : null, 
-                          'talk_id'            => isset($page['talkid']) ? $page['talkid'] : null, 
-                          'mediawiki_full_url' => isset($page['fullurl']) ? $page['fullurl'] : null, 
-                          'mediawiki_edit_url' => isset($page['editurl']) ? $page['editurl'] : null, 
-                          'watched'            => isset($page['watched']) ? true: false, 
-                          'redirect'           => isset($page['redirect']) ? true: false, 
+        $pageInfo = array('page_id'            => isset($page['pageid']) ? $page['pageid'] : null,
+                          'namespace_index'    => isset($page['ns']) ? $page['ns'] : null,
+                          'mediawiki_title'    => isset($page['title']) ? $page['title'] : null,
+                          'last_revision_id'   => isset($page['lastrevid']) ? $page['lastrevid'] : null,
+                          'counter'            => isset($page['counter']) ? $page['counter'] : null,
+                          'length'             => isset($page['length']) ? $page['length'] : null,
+                          'start_timestamp'    => isset($page['starttimestamp']) ? $page['starttimestamp'] : null,
+                          'edit_token'         => isset($page['edittoken']) ? $page['edittoken'] : null,
+                          'move_token'         => isset($page['movetoken']) ? $page['movetoken'] : null,
+                          'delete_token'       => isset($page['deletetoken']) ? $page['deletetoken'] : null,
+                          'protect_token'      => isset($page['protecttoken']) ? $page['protecttoken'] : null,
+                          'protections'        => isset($page['protection']) ? $page['protection'] : null,
+                          'talk_id'            => isset($page['talkid']) ? $page['talkid'] : null,
+                          'mediawiki_full_url' => isset($page['fullurl']) ? $page['fullurl'] : null,
+                          'mediawiki_edit_url' => isset($page['editurl']) ? $page['editurl'] : null,
+                          'watched'            => isset($page['watched']) ? true: false,
+                          'redirect'           => isset($page['redirect']) ? true: false,
                           'new'                => isset($page['new']) ? true: false);
         return $pageInfo;
     }
-    
+
     /**
      * Get the revisions for the specified page.
-     * 
+     *
      * @uses Scripto_Service_MediaWiki::getRevisions()
      * @param string $title
      * @param int $limit
@@ -838,69 +979,69 @@ class Scripto_Document
         $revisions = array();
         do {
             $response = $this->_mediawiki->getRevisions(
-                $title, 
-                array('rvstartid' => $startRevisionId, 
-                      'rvlimit'   => 100, 
+                $title,
+                array('rvstartid' => $startRevisionId,
+                      'rvlimit'   => 100,
                       'rvprop'    => 'ids|flags|timestamp|user|comment|size')
             );
             $page = current($response['query']['pages']);
-            
+
             // Return if the page has not been created.
             if (array_key_exists('missing', $page)) {
                 return $revisions;
             }
-            
+
             foreach ($page['revisions'] as $revision) {
-                
+
                 $action = Scripto::getChangeAction(array('comment' => $revision['comment']));
-                
+
                 // Build the revisions.
                 $revisions[] = array(
-                    'revision_id' => $revision['revid'], 
-                    'parent_id'   => $revision['parentid'], 
-                    'user'        => $revision['user'], 
-                    'timestamp'   => $revision['timestamp'], 
-                    'comment'     => $revision['comment'], 
-                    'size'        => $revision['size'], 
-                    'action'      => $action, 
+                    'revision_id' => $revision['revid'],
+                    'parent_id'   => $revision['parentid'],
+                    'user'        => $revision['user'],
+                    'timestamp'   => $revision['timestamp'],
+                    'comment'     => $revision['comment'],
+                    'size'        => $revision['size'],
+                    'action'      => $action,
                 );
-                
+
                 // Break out of the loops if limit has been reached.
                 if ($limit == count($revisions)) {
                     break 2;
                 }
             }
-            
+
             // Set the query continue, if any.
             if (isset($response['query-continue'])) {
                 $startRevisionId = $response['query-continue']['revisions']['rvstartid'];
             } else {
                 $startRevisionId = null;
             }
-            
+
         } while ($startRevisionId);
-        
+
         return $revisions;
     }
-    
+
     /**
-     * Encode a base title that enables fail-safe document page transport 
+     * Encode a base title that enables fail-safe document page transport
      * between the external system, Scripto, and MediaWiki.
-     * 
-     * The base title is the base MediaWiki page title that corresponds to the 
-     * document page. Encoding is necessary to allow all Unicode characters in 
-     * document and page IDs, even those not allowed in URL syntax and MediaWiki 
+     *
+     * The base title is the base MediaWiki page title that corresponds to the
+     * document page. Encoding is necessary to allow all Unicode characters in
+     * document and page IDs, even those not allowed in URL syntax and MediaWiki
      * naming conventions. Encoding in Base64 allows the title to be decoded.
-     * 
+     *
      * The base title has four parts:
      * <ol>
-     *     <li>A title prefix to keep MediaWiki from capitalizing the first 
+     *     <li>A title prefix to keep MediaWiki from capitalizing the first
      *     character</li>
      *     <li>A URL-safe Base64 encoded document ID</li>
      *     <li>A delimiter between the encoded document ID and page ID</li>
      *     <li>A URL-safe Base64 encoded page ID</li>
      * </ol>
-     * 
+     *
      * @link http://en.wikipedia.org/wiki/Base64#URL_applications
      * @link http://en.wikipedia.org/wiki/Wikipedia:Naming_conventions_%28technical_restrictions%29
      * @param string|int $documentId The document ID
@@ -914,10 +1055,10 @@ class Scripto_Document
              . self::BASE_TITLE_DELIMITER
              . Scripto_Document::base64UrlEncode($pageId);
     }
-    
+
     /**
      * Decode the base title.
-     * 
+     *
      * @param string|int $baseTitle
      * @return array An array containing the document ID and page ID
      */
@@ -930,10 +1071,10 @@ class Scripto_Document
         // URL-safe Base64 decode the array and return it.
         return array_map('Scripto_Document::base64UrlDecode', $baseTitle);
     }
-    
+
     /**
      * Encode a string to URL-safe Base64.
-     * 
+     *
      * @link http://en.wikipedia.org/wiki/Base64#URL_applications
      * @param string $str
      * @return string
@@ -942,10 +1083,10 @@ class Scripto_Document
     {
         return strtr(rtrim(base64_encode($str), '='), '+/', '-_');
     }
-    
+
     /**
      * Decode a string from a URL-safe Base64.
-     * 
+     *
      * @param string $str
      * @return string
      */
