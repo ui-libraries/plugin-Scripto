@@ -302,17 +302,17 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Append the transcribe link to the public items show page.
      */
-    public function hookPublicItemsShow()
+    public function hookPublicItemsShow($args)
     {
-        $this->_appendToItemsShow();
+        $this->_appendToItemsShow($args);
     }
 
     /**
      * Append the transcribe link to the admin items show page.
      */
-    public function hookAdminItemsShow()
+    public function hookAdminItemsShow($args)
     {
-        $this->_appendToItemsShow();
+        $this->_appendToItemsShow($args);
     }
 
     /**
@@ -342,26 +342,22 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Append the transcribe link to the items show page.
      */
-    protected function _appendToItemsShow()
+    protected function _appendToItemsShow($args)
     {
-        $item = get_current_record('item');
+        $view = $args['view'];
+        $item = $args['item'];
+
         $scripto = self::getScripto();
         // Do not show page links if document is not valid.
         if (!$scripto->documentExists($item->id)) {
             return;
         }
         $doc = $scripto->getDocument($item->id);
-?>
-<h2><?php echo __('Transcribe This Item'); ?></h2>
-<ol>
-    <?php foreach ($doc->getPages() as $pageId => $pageName): ?>
-    <li><a href="<?php echo url(array('action' => 'transcribe',
-                                      'item-id' => $item->id,
-                                      'file-id' => $pageId),
-                                'scripto_action_item_file'); ?>" id="scripto-transcribe-item"><?php echo $pageName; ?></a></li>
-    <?php endforeach; ?>
-</ol>
-<?php
+
+        echo $view->partial('append-to-item-show.php', array(
+            'item' => $item,
+            'doc' => $doc,
+        ));
     }
 
     /**
