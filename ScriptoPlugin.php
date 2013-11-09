@@ -47,7 +47,9 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
     protected $_options = array(
         'scripto_mediawiki_api_url' => '',
         'scripto_image_viewer' => null,
+        'scripto_viewer_css' => 'height: 400px; border: 1px grey solid; margin-bottom: 12px;',
         'scripto_use_google_docs_viewer' => '',
+        'scripto_iframe_properties' => 'width="500" height="600" style="border: none;"',
         'scripto_import_type' => null,
         'scripto_home_page_text' => '<p>Scripto</p>',
     );
@@ -262,21 +264,30 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         if (!in_array($imageViewer, array('openlayers', 'zoomit'))) {
             $imageViewer = 'default';
         }
+        $viewerCss = get_option('scripto_viewer_css');
+        if (is_null($viewerCss)) {
+            set_option('scripto_viewer_css', $this->_options['scripto_viewer_css']);
+        }
         $useGoogleDocsViewer = get_option('scripto_use_google_docs_viewer');
         if (is_null($useGoogleDocsViewer)) {
             $useGoogleDocsViewer = 0;
+        }
+        $iframeProterties = get_option('scripto_iframe_properties');
+        if (is_null($iframeProterties)) {
+            set_option('scripto_iframe_properties', $this->_options['scripto_iframe_properties']);
         }
         $importType = get_option('scripto_import_type');
         if (is_null($importType)) {
             $importType = 'html';
         }
 
-        echo get_view()->partial(
-            'plugins/scripto-config-form.php',
-            array('image_viewer' => $imageViewer,
-                  'use_google_docs_viewer' => $useGoogleDocsViewer,
-                  'import_type' => $importType)
-        );
+        echo get_view()->partial('plugins/scripto-config-form.php', array(
+            'image_viewer' => $imageViewer,
+            'viewer_css' => $viewerCss,
+            'use_google_docs_viewer' => $useGoogleDocsViewer,
+            'iframe_properties' => $iframeProterties,
+            'import_type' => $importType,
+        ));
     }
 
     /**
@@ -294,7 +305,9 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         // Set options that are specific to Scripto.
         set_option('scripto_mediawiki_api_url', trim($post['scripto_mediawiki_api_url']));
         set_option('scripto_image_viewer', $post['scripto_image_viewer']);
+        set_option('scripto_viewer_css', trim($post['scripto_viewer_css']));
         set_option('scripto_use_google_docs_viewer', $post['scripto_use_google_docs_viewer']);
+        set_option('scripto_iframe_properties', trim($post['scripto_iframe_properties']));
         set_option('scripto_import_type', $post['scripto_import_type']);
         set_option('scripto_home_page_text', trim($post['scripto_home_page_text']));
     }
@@ -385,7 +398,7 @@ jQuery(document).ready(function() {
     scriptoMap.zoomToMaxExtent();
 });
 </script>
-<div id="scripto-openlayers" style="height: 400px; border: 1px grey solid; margin-bottom: 12px;"></div>
+<div id="scripto-openlayers" style="<?php echo get_option('scripto_viewer_css'); ?>"></div>
 <?php
     }
 
@@ -409,9 +422,11 @@ jQuery(document).ready(function() {
     public static function googleDocs($file)
     {
         $uri = Zend_Uri::factory('http://docs.google.com/viewer');
-        $uri->setQuery(array('url' => $file->getWebPath('original'),
-                             'embedded' => 'true'));
-        echo '<iframe src="' . $uri->getUri() . '" width="500" height="600" style="border: none;"></iframe>';
+        $uri->setQuery(array(
+            'url' => $file->getWebPath('original'),
+            'embedded' => 'true',
+        ));
+        echo '<iframe src="' . $uri->getUri() . '" ' . get_option('scripto_iframe_properties') . '></iframe>';
     }
 
     /**
