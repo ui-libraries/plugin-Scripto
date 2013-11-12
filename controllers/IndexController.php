@@ -372,11 +372,13 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
                         $body = $doc->getTalkPageHtml();
                     } else {
                         $doc->editTranscriptionPage($this->_getParam('wikitext'));
-                        $body = $doc->getTranscriptionPageHtml();
+                        $type = get_option('scripto_import_type');
+                        $body = $doc->getTranscriptionPage($type);
+                        // Automatic update of metadata.
                         $doc->setPageTranscriptionStatus();
                         $doc->setDocumentTranscriptionProgress();
                         $doc->setItemSortWeight();
-                        $doc->exportPage(get_option('scripto_import_type'));
+                        $doc->exportPage($type);
                     }
                     break;
                 case 'watch':
@@ -389,13 +391,17 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
                     if ('talk' == $this->_getParam('page')) {
                         $doc->protectTalkPage();
                     } else {
+                        // Protect page uses current edit text, even if button
+                        // was not pressed.
                         $doc->editTranscriptionPage($this->_getParam('wikitext'));
-                        $body = $doc->getTranscriptionPagePlainText();
+                        $type = get_option('scripto_import_type');
+                        $body = $doc->getTranscriptionPage($type);
                         $doc->protectTranscriptionPage();
+                        // Automatic update of metadata.
                         $doc->setPageTranscriptionStatus();
                         $doc->setDocumentTranscriptionProgress();
                         $doc->setItemSortWeight();
-                        $doc->exportPage(get_option('scripto_import_type'));
+                        $doc->exportPage($type);
                     }
                     break;
                 case 'unprotect':

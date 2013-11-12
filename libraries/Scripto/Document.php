@@ -330,6 +330,54 @@ class Scripto_Document
     }
 
     /**
+     * Get the MediaWiki transcription page formatted with the specified type
+     * for the current page.
+     *
+     * @internal Wrapper for getTranscriptionPageWikitext(),
+     * getTranscriptionPageHtml() and getTranscriptionPagePlainText().
+     * @param string $type The type of text to set, valid options are
+     * plain_text, html, and wikitext.
+     * @return string The transcription text formatted with specified type.
+     */
+    public function getTranscriptionPage($type)
+    {
+        switch ($type) {
+            case 'plain_text':
+                return $this->getTranscriptionPagePlainText();
+            case 'html':
+                return $this->getTranscriptionPageHtml();
+            case 'wikitext':
+                return $this->getTranscriptionPageWikitext();
+            default:
+                throw new Scripto_Exception('The provided import type is invalid.');
+        }
+    }
+
+    /**
+     * Get the MediaWiki talk page formatted with the specified type for the
+     * current page.
+     *
+     * @internal Wrapper for getTalkPageWikitext(), getTalkPageHtml() and
+     * getTalkPagePlainText().
+     * @param string $type The type of text to set, valid options are
+     * plain_text, html, and wikitext.
+     * @return string The talk text formatted with specified type.
+     */
+    public function getTalkPage($type)
+    {
+        switch ($type) {
+            case 'plain_text':
+                return $this->getTalkPagePlainText();
+            case 'html':
+                return $this->getTalkPageHtml();
+            case 'wikitext':
+                return $this->getTalkPageWikitext();
+            default:
+                throw new Scripto_Exception('The provided import type is invalid.');
+        }
+    }
+
+    /**
      * Get the MediaWiki transcription page wikitext for the current page.
      *
      * @uses Scripto_Service_MediaWiki::getLatestRevisionWikitext()
