@@ -357,8 +357,8 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function _appendToItemsShow($args)
     {
-        $view = $args['view'];
-        $item = $args['item'];
+        $view = isset($args['view']) ? $args['view'] : get_view();
+        $item = isset($args['item']) ? $args['item'] : get_current_record('item');
 
         $scripto = self::getScripto();
         // Do not show page links if document is not valid.

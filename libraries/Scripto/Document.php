@@ -30,6 +30,11 @@ class Scripto_Document
     const BASE_TITLE_PREFIX = '.';
 
     /**
+     * The prefix used for talk page, before the base title.
+     */
+    const BASE_TITLE_TALK = 'Talk:';
+
+    /**
      * The delimiter used to separate the document and page IDs in the base
      * title.
      */
@@ -144,7 +149,7 @@ class Scripto_Document
 
         // Set information about the transcription and talk pages.
         $this->_transcriptionPageInfo = $this->_getPageInfo($baseTitle);
-        $this->_talkPageInfo = $this->_getPageInfo('Talk:' . $baseTitle);
+        $this->_talkPageInfo = $this->_getPageInfo(self::BASE_TITLE_TALK . $baseTitle);
 
         $this->_pageId = $pageId;
         $this->_pageName = $this->_adapter->getDocumentPageName($this->_id, $pageId);
@@ -326,7 +331,7 @@ class Scripto_Document
         if (is_null($this->_pageId)) {
             throw new Scripto_Exception('The document page must be set before getting the talk page MediaWiki URL.');
         }
-        return $this->_getPageMediawikiUrl('Talk:' . $this->_baseTitle);
+        return $this->_getPageMediawikiUrl(self::BASE_TITLE_TALK . $this->_baseTitle);
     }
 
     /**
@@ -402,7 +407,7 @@ class Scripto_Document
         if (is_null($this->_pageId)) {
             throw new Scripto_Exception('The document page must be set before getting the talk page wikitext.');
         }
-        return $this->_mediawiki->getLatestRevisionWikitext('Talk:' . $this->_baseTitle);
+        return $this->_mediawiki->getLatestRevisionWikitext(self::BASE_TITLE_TALK . $this->_baseTitle);
     }
 
     /**
@@ -430,7 +435,7 @@ class Scripto_Document
         if (is_null($this->_pageId)) {
             throw new Scripto_Exception('The document page must be set before getting the talk page HTML.');
         }
-        return $this->_mediawiki->getLatestRevisionHtml('Talk:' . $this->_baseTitle);
+        return $this->_mediawiki->getLatestRevisionHtml(self::BASE_TITLE_TALK . $this->_baseTitle);
     }
 
     /**
@@ -458,7 +463,7 @@ class Scripto_Document
         if (is_null($this->_pageId)) {
             throw new Scripto_Exception('The document page must be set before getting the talk page plain text.');
         }
-        return html_entity_decode(strip_tags($this->_mediawiki->getLatestRevisionHtml('Talk:' . $this->_baseTitle)));
+        return html_entity_decode(strip_tags($this->_mediawiki->getLatestRevisionHtml(self::BASE_TITLE_TALK . $this->_baseTitle)));
     }
 
     /**
@@ -488,7 +493,7 @@ class Scripto_Document
         if (is_null($this->_pageId)) {
             throw new Scripto_Exception('The document page must be set before getting the talk page history.');
         }
-        return $this->_getPageHistory('Talk:' . $this->_baseTitle, $limit, $startRevisionId);
+        return $this->_getPageHistory(self::BASE_TITLE_TALK . $this->_baseTitle, $limit, $startRevisionId);
     }
 
     /**
@@ -544,7 +549,7 @@ class Scripto_Document
         if (is_null($this->_pageId)) {
             throw new Scripto_Exception('The document page must be set before editing the talk page.');
         }
-        $this->_mediawiki->edit('Talk:' . $this->_baseTitle,
+        $this->_mediawiki->edit(self::BASE_TITLE_TALK . $this->_baseTitle,
                                 $text,
                                 $this->_talkPageInfo['edit_token']);
     }
@@ -571,10 +576,10 @@ class Scripto_Document
         if (is_null($this->_pageId)) {
             throw new Scripto_Exception('The document page must be set before protecting the talk page.');
         }
-        $this->_protectPage('Talk:' . $this->_baseTitle, $this->_talkPageInfo['protect_token']);
+        $this->_protectPage(self::BASE_TITLE_TALK . $this->_baseTitle, $this->_talkPageInfo['protect_token']);
 
         // Update information about this page.
-        $this->_talkPageInfo = $this->_getPageInfo('Talk:' . $this->_baseTitle);
+        $this->_talkPageInfo = $this->_getPageInfo(self::BASE_TITLE_TALK . $this->_baseTitle);
     }
 
     /**
@@ -599,10 +604,10 @@ class Scripto_Document
         if (is_null($this->_pageId)) {
             throw new Scripto_Exception('The document page must be set before unprotecting the talk page.');
         }
-        $this->_unprotectPage('Talk:' . $this->_baseTitle, $this->_talkPageInfo['protect_token']);
+        $this->_unprotectPage(self::BASE_TITLE_TALK . $this->_baseTitle, $this->_talkPageInfo['protect_token']);
 
         // Update information about this page.
-        $this->_talkPageInfo = $this->_getPageInfo('Talk:' . $this->_baseTitle);
+        $this->_talkPageInfo = $this->_getPageInfo(self::BASE_TITLE_TALK . $this->_baseTitle);
     }
 
     /**
@@ -643,6 +648,16 @@ class Scripto_Document
     public function isCreatedPage()
     {
         return (boolean) $this->_mediawiki->pageCreated($this->_baseTitle);
+    }
+
+    /**
+     * Determine if a talk page has been created
+     *
+     * @return bool
+     */
+    public function isCreatedTalkPage()
+    {
+        return (boolean) $this->_mediawiki->pageCreated(self::BASE_TITLE_TALK . $this->_baseTitle);
     }
 
     /**

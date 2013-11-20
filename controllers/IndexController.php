@@ -367,18 +367,33 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
             $body = null;
             switch ($this->_getParam('page_action')) {
                 case 'edit':
+                    $text = $this->_getParam('wikitext');
+                    // Because creating new, empty pages is not allowed by
+                    // MediaWiki, a check is done.
                     if ('talk' == $this->_getParam('page')) {
-                        $doc->editTalkPage($this->_getParam('wikitext'));
+                        if (!$doc->isProtectedTalkPage()) {
+                            if (trim($text) != '' || $doc->isCreatedTalkPage()) {
+                                $doc->editTalkPage($text);
+                            }
+                        }
                         $body = $doc->getTalkPageHtml();
-                    } else {
-                        $doc->editTranscriptionPage($this->_getParam('wikitext'));
+                    }
+                    else {
                         $type = get_option('scripto_import_type');
-                        $body = $doc->getTranscriptionPage($type);
-                        // Automatic update of metadata.
-                        $doc->setPageTranscriptionStatus();
-                        $doc->setDocumentTranscriptionProgress();
-                        $doc->setItemSortWeight();
-                        $doc->exportPage($type);
+                        if (!$doc->isProtectedTranscriptionPage()) {
+                            if (trim($text) != '' || $doc->isCreatedPage()) {
+                                $doc->editTranscriptionPage($text);
+                                $body = $doc->getTranscriptionPage($type);
+                                // Automatic update of metadata.
+                                $doc->setPageTranscriptionStatus();
+                                $doc->setDocumentTranscriptionProgress();
+                                $doc->setItemSortWeight();
+                                $doc->exportPage($type);
+                            }
+                        }
+                        if (is_null($body)) {
+                            $body = $doc->getTranscriptionPage($type);
+                        }
                     }
                     break;
                 case 'watch':
@@ -388,13 +403,26 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
                     $doc->unwatchPage();
                     break;
                 case 'protect':
+                    // Protect page uses current edit text, even if edit button
+                    // was not pressed.
+                    $text = $this->_getParam('wikitext');
                     if ('talk' == $this->_getParam('page')) {
+                        // Because creating new, empty pages is not allowed by
+                        // MediaWiki, a check is done.
+                        if (trim($text) != '' || $doc->isCreatedTalkPage()) {
+                            $doc->editTalkPage($text);
+                        }
+                        $body = $doc->getTalkPageHtml();
+                        // Set protection.
                         $doc->protectTalkPage();
-                    } else {
-                        // Protect page uses current edit text, even if button
-                        // was not pressed.
-                        $doc->editTranscriptionPage($this->_getParam('wikitext'));
+                    }
+                    else {
                         $type = get_option('scripto_import_type');
+                        // Because creating new, empty pages is not allowed by
+                        // MediaWiki, a check is done.
+                        if (trim($text) != '' || $doc->isCreatedPage()) {
+                            $doc->editTranscriptionPage($text);
+                        }
                         $body = $doc->getTranscriptionPage($type);
                         $doc->protectTranscriptionPage();
                         // Automatic update of metadata.
