@@ -367,7 +367,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         }
         $doc = $scripto->getDocument($item->id);
 
-        echo $view->partial('append-to-item-show.php', array(
+        echo $view->partial('common/scripto-append-to-item-show.php', array(
             'item' => $item,
             'doc' => $doc,
         ));
