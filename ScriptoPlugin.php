@@ -32,6 +32,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         'admin_head',
         'public_items_show',
         'admin_items_browse_simple_each',
+        'admin_items_browse_detailed_each',
         'admin_items_browse',
         'admin_items_show',
     );
@@ -364,7 +365,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
                     $statusText = __('Undefined');
             }
         }
-        $html = '<a href="' . ADMIN_BASE_URL . '" id="scripto-%d" class="scripto-toggle-status status %s">%s</a>';
+        $html = '<a href="' . ADMIN_BASE_URL . '" id="scripto-%d" class="scripto toggle-status status %s">%s</a>';
         $args = array();
         $args[] = $item->id;
         $args[] = $statusClass;
@@ -373,13 +374,29 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         echo '<p>' . __('Scripto: %s', vsprintf($html, $args)) . '</p>';
     }
 
+    public function hookAdminItemsBrowseDetailedEach($args)
+    {
+        $view = $args['view'];
+        $item = $args['item'];
+
+        $status = $item->getElementTexts('Scripto', 'Status');
+        $html = '<a href="' . ADMIN_BASE_URL . '" id="scripto-reset-%d" class="scripto fill-pages">%s</a>' ;
+        $args = array();
+        $args[] = $item->id;
+        $args[] = __('Fill pages');
+
+        echo '<p>' . __('%sScripto:%s %s', '<strong>', '</strong>', vsprintf($html, $args)) . '</p>';
+    }
+
     public function hookAdminItemsBrowse($args)
     { ?>
 <script type="text/javascript">
     Omeka.messages = jQuery.extend(Omeka.messages,
         {'scripto':{
             'notToTranscribe':'<?php echo __('Not to transcribe'); ?>',
-            'toTranscribe':'<?php echo __('To transcribe'); ?>'
+            'toTranscribe':'<?php echo __('To transcribe'); ?>',
+            'confirmation':'<?php echo __('Are your sure to fill all pages of this item with the field "%s"?', get_option('scripto_source_element')); ?>',
+            'error':'<?php echo __('Failure during process.'); ?>'
         }}
     );
 </script>

@@ -45,6 +45,60 @@ class Scripto_AjaxController extends Omeka_Controller_AbstractActionController
     }
 
     /**
+     * Handle AJAX requests to fill transcription of an item from source
+     * element.
+     */
+    public function fillPagesAction()
+    {
+        if (!$this->_checkAjax('fill-pages')) {
+            return;
+        }
+
+        // Handle action.
+        try {
+            $id = (integer) $this->_getParam('id');
+            $scripto = ScriptoPlugin::getScripto();
+            if (!$scripto->documentExists($id)) {
+                $this->getResponse()->setHttpResponseCode(400);
+                return;
+            }
+            // Get some variables.
+            list($elementSetName, $elementName) = explode(':', get_option('scripto_source_element'));
+            $type = get_option('scripto_import_type');
+
+            $doc = $scripto->getDocument($id);
+            // Check all pages, created or not.
+            foreach ($doc->getPages() as $pageId => $pageName) {
+                // If the page doesn't exist, it is created automatically with
+                // text from source element.
+                $doc->setPage($pageId);
+                // Else, edit the transcription if the page is already created.
+                if ($doc->isCreatedPage()) {
+                    $file = get_record_by_id('File', $pageId);
+                    $transcription = $file->getElementTexts($elementSetName, $elementName);
+                    $transcription = empty($transcription) ? '' : $transcription[0]->text;
+                    $flagProtect = $doc->isProtectedTranscriptionPage();
+                    if ($flagProtect) {
+                        $doc->unprotectTranscriptionPage();
+                    }
+                    $doc->editTranscriptionPage($transcription);
+                    // Automatic update of metadata.
+                    $doc->setPageTranscriptionStatus();
+                    $doc->setDocumentTranscriptionProgress();
+                    $doc->setItemSortWeight();
+                    $doc->exportPage($type);
+                    if ($flagProtect) {
+                        $doc->protectTranscriptionPage();
+                    }
+                }
+            }
+            $this->getResponse()->setBody('success');
+        } catch (Exception $e) {
+            $this->getResponse()->setHttpResponseCode(500);
+        }
+    }
+
+    /**
      * Check AJAX requests.
      *
      *

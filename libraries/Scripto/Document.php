@@ -156,8 +156,8 @@ class Scripto_Document
         $this->_baseTitle = $baseTitle;
 
         // Initialize wiki page text on setPage() of the page.
-        if ($pageText = $this->_adapter->getDocumentPageTranscription($this->_pageId)) {
-           if (!$this->isCreatedPage()) {
+       if (!$this->isCreatedPage()) {
+            if ($pageText = $this->_adapter->getDocumentPageTranscription($this->_pageId)) {
                $this->editTranscriptionPage($pageText);
            }
         }

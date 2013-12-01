@@ -23,9 +23,12 @@ Review’, ‘Completed’).
 completed to the top.
 * Initialize document page text entry box with pre-existing text, if available
 (helpful if using Scripto to correct OCR for typescript pages).
-* The source element used to initialize a document page can be chosen (helpful
-to keep track of original source). Scripto:Transcription is used by default. It
-should be a file level element.
+* Fill document pages with a pre-existing text, if available in a field element
+of each file, via a button in the admin item pages (helpful to re-initialize a
+list of document pages at any time).
+* The source element used to initialize or to reinitialize a document page can
+be chosen (helpful to keep track of original source). Scripto:Transcription is
+used by default. It should be a file level element.
 * On every page action, automatically import transcriptions from MediaWiki as
 file metadata.
 * Possibility to define items that should not be transcribed via the admin page

@@ -549,7 +549,6 @@ class Scripto_Service_MediaWiki extends Zend_Service_Abstract
         $params['text']          = $text;
         $params['token']         = $edittoken;
         $params['basetimestamp'] = $basetimestamp;
-
         return $this->_request('edit', $params);
     }
 

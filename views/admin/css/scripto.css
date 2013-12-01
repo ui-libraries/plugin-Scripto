@@ -1,20 +1,21 @@
-a.scripto-toggle-status.status {
+a.scripto {
     position:relative;
-/*    left: -20px;*/
     padding-left: 20px;
     margin-left: 3px;
     margin-right: 3px;
     cursor: pointer;
 }
-a.scripto-toggle-status.undefined {
+a.scripto.toggle-status.undefined {
     background: url('../../../../../application/views/scripts/images/silk-icons/error.png') no-repeat scroll 0 0 transparent;
 }
-a.scripto-toggle-status.to-transcribe {
+a.scripto.toggle-status.to-transcribe,
+a.scripto.fill-pages.success {
     background: url('../../../../../application/views/scripts/images/silk-icons/tick.png') no-repeat scroll 0 0 transparent;
 }
-a.scripto-toggle-status.not-to-transcribe {
+a.scripto.toggle-status.not-to-transcribe,
+a.scripto.fill-pages.error {
     background: url('../../../../../application/views/scripts/images/silk-icons/cancel.png') no-repeat scroll 0 0 transparent;
 }
-a.scripto-toggle-status.transmit {
-    background: url('../../shared/images/waiting-mini.gif') no-repeat scroll 0 0 transparent;
+a.scripto.transmit {
+    background: url('../../shared/images/waiting-mini.gif') no-repeat scroll 0 0 transparent !important;
 }

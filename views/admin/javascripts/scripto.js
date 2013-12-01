@@ -1,10 +1,10 @@
 jQuery(document).ready(function() {
     // Handle status.
-    jQuery('.scripto-toggle-status').click(function(event) {
+    jQuery('.scripto.toggle-status').click(function(event) {
         event.preventDefault();
         var id = jQuery(this).attr('id');
         var current = jQuery('#' + id);
-        id = id.substr(id.indexOf('-') + 1);
+        id = id.substr(id.lastIndexOf('-') + 1);
         var ajaxUrl = jQuery(this).attr('href') + '/scripto/ajax/update';
         jQuery(this).addClass('transmit');
         if (jQuery(this).hasClass('not-to-transcribe')) {
@@ -38,5 +38,32 @@ jQuery(document).ready(function() {
                 }
             );
         }
+    });
+
+    // Reset transcription.
+    jQuery('.scripto.fill-pages').click(function(event) {
+        event.preventDefault();
+        if (!confirm(Omeka.messages.scripto.confirmation)) {
+            return;
+        }
+        var id = jQuery(this).attr('id');
+        var current = jQuery('#' + id);
+        id = id.substr(id.lastIndexOf('-') + 1);
+        var ajaxUrl = jQuery(this).attr('href') + '/scripto/ajax/fill-pages';
+        jQuery(this).addClass('transmit');
+        jQuery.post(ajaxUrl,
+            {
+                id: id
+            },
+            function(data) {
+                if (data == 'success') {
+                    current.addClass('success');
+                } else {
+                    current.addClass('error');
+                    current.text(Omeka.messages.scripto.error);
+                }
+                current.removeClass('transmit');
+            }
+        );
     });
 });
