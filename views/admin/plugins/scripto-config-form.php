@@ -28,6 +28,28 @@
 
 <div class="field">
     <div class="two columns alpha">
+        <label for="scripto_source_element"><?php echo __('Element source used to initialize transcription'); ?></label>
+    </div>
+    <div class="inputs five columns omega">
+        <p class="explanation"><?php echo __(
+            'A document page is automatically initialized with this element, if available. '
+            . 'This is helpful when Scripto is used to correct OCR for typescript pages. '
+            . 'This can be useful to keep track of original source too.'
+        ); ?></p>
+        <?php
+            echo $this->formSelect('scripto_source_element',
+                $element_id,
+                array(),
+                get_table_options('Element', null, array(
+                    'record_types' => array('File', 'All'),
+                    'sort' => 'alphaBySet')
+            ));
+        ?>
+    </div>
+</div>
+
+<div class="field">
+    <div class="two columns alpha">
         <label for="scripto_image_viewer"><?php echo __('Image viewer'); ?></label>
     </div>
     <div class="inputs five columns omega">

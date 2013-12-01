@@ -49,6 +49,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected $_options = array(
         'scripto_mediawiki_api_url' => '',
+        'scripto_source_element' => 'Scripto:Transcription',
         'scripto_image_viewer' => null,
         'scripto_viewer_css' => 'height: 400px; border: 1px grey solid; margin-bottom: 12px;',
         'scripto_use_google_docs_viewer' => '',
@@ -263,6 +264,12 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
     public function hookConfigForm()
     {
         // Set form defaults.
+        list($elementSetName, $elementName) = explode(':', get_option('scripto_source_element'));
+        $element = get_db()->getTable('Element')->findByElementSetNameAndElementName($elementSetName, $elementName);
+        if (empty($element)) {
+            list($elementSetName, $elementName) = explode(':', $this->_options['scripto_source_element']);
+            $element = get_db()->getTable('Element')->findByElementSetNameAndElementName($elementSetName, $elementName);
+        }
         $imageViewer = get_option('scripto_image_viewer');
         if (!in_array($imageViewer, array('openlayers', 'zoomit'))) {
             $imageViewer = 'default';
@@ -285,6 +292,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         }
 
         echo get_view()->partial('plugins/scripto-config-form.php', array(
+            'element_id' => $element->id,
             'image_viewer' => $imageViewer,
             'viewer_css' => $viewerCss,
             'use_google_docs_viewer' => $useGoogleDocsViewer,
@@ -305,8 +313,12 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
             throw new Omeka_Plugin_Installer_Exception('Invalid MediaWiki API URL');
         }
 
+        // Validate the source element.
+        $element = get_record_by_id('Element', (integer) $post['scripto_source_element']);
+
         // Set options that are specific to Scripto.
         set_option('scripto_mediawiki_api_url', trim($post['scripto_mediawiki_api_url']));
+        set_option('scripto_source_element', $element->set_name . ':' . $element->name);
         set_option('scripto_image_viewer', $post['scripto_image_viewer']);
         set_option('scripto_viewer_css', trim($post['scripto_viewer_css']));
         set_option('scripto_use_google_docs_viewer', $post['scripto_use_google_docs_viewer']);

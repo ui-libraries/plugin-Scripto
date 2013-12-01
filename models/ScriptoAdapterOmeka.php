@@ -179,9 +179,11 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
             return false;
         }
 
-        // The transcription text comes from the Scripto transcription field of the file.
+        // The transcription text comes from the the chosen source element of
+        // the file (Scripto:Transcription by default).
         // If no existing transcription, then return null.
-        $transcription = $file->getElementTexts('Scripto', 'Transcription');
+        list($elementSetName, $elementName) = explode(':', get_option('scripto_source_element'));
+        $transcription = $file->getElementTexts($elementSetName, $elementName);
         if (empty($transcription)) {
             $pageText = null;
         } else {
