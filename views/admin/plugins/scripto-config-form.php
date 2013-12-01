@@ -6,10 +6,6 @@
     '<a href="http://www.mediawiki.org/wiki/MediaWiki">', '</a>'
 ); ?></p>
 
-<p><?php echo __(
-    'Scripto will assume files belonging to an item are in logical order, first to last page.'
-); ?></p>
-
 <div class="field">
     <div class="two columns alpha">
         <label for="scripto_mediawiki_api_url"><?php echo __('MediaWiki API URL'); ?></label>
@@ -120,6 +116,27 @@
             'scripto_iframe_class',
             get_option('scripto_iframe_class')
         ); ?>
+    </div>
+</div>
+
+<div class="field">
+    <div class="two columns alpha">
+        <label for="scripto_files_order"><?php echo __('Order of files'); ?></label>
+    </div>
+    <div class="inputs five columns omega">
+        <p class="explanation"><?php echo __(
+            'Pages of a document can be ordered by predefined order (default), by filename or by id.'
+        ); ?></p>
+        <?php
+            echo $this->formSelect('scripto_files_order',
+                get_option('scripto_files_order'),
+                array(),
+                array(
+                    'order' => __('Predefined order'),
+                    'filename' => __('Original filename'),
+                    'id' => __('File id'),
+            ));
+        ?>
     </div>
 </div>
 

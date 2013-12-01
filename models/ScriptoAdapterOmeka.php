@@ -73,7 +73,8 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
         $item = $this->_item;
 
         $documentPages = array();
-        foreach ($item->Files as $file) {
+        $files = get_db()->getTable('File')->findByItem($item->id, array(), get_option('scripto_files_order'));
+        foreach ($files as $file) {
             // The page name is either the Dublin Core title of the file or the
             // file's original filename.
             $titles = $file->getElementTexts('Dublin Core', 'Title');

@@ -33,6 +33,8 @@ used by default. It should be a file level element.
 file metadata.
 * Possibility to define items that should not be transcribed via the admin page
 items/show.
+* Choice of the order of  the pages inside a document by predefined order,
+original filename or file id.
 
 The UI Libraries has also created an Omeka theme, [Scribe], to make use of these
 new features.
@@ -92,11 +94,29 @@ this [sample] gist helpful in generating csv upload files.
 
 **Document-level (item) metadata**
 
-<table border="1"><tbody><tr><td><p><strong>Element</strong></p></td><td><p><strong>Omeka element</strong></p></td><td><p><strong>Comments</strong></p></td></tr><tr><td><p>Title</p></td><td><p>dc:Title</p></td><td><p>The title of the document</p></td></tr><tr><td><p>Source URL</p></td><td><p>dc:Source</p></td><td><p>(optional) The URL for the original location or master record for the document (If you are replicating the document from another digital environment).</p></td></tr><tr><td><p>Source identifier</p></td><td><p>dc:Identifier</p></td><td><p>(optional) An identifier for the document that ties it to the original location or master record (If you are replicating the document from another digital environment). Note that Omeka will generate a system identifier for each document (item).</p></td></tr><tr><td><p>Digital collection URL</p></td><td><p>dc:Is Part Of</p></td><td><p>(optional) The URL for the digital collection that the document belongs to in its original digital environment (If you are replicating the document from another digital environment).</p></td></tr><tr><td><p>Finding aid URL</p></td><td><p>dc:Relation</p></td><td><p>(optional) The URL for the finding aid of the document&rsquo;s source collection. </p></td></tr><tr><td><p>Sorting number</p></td><td><p>dc:Audience</p></td><td><p>6-digit number for sorting the item within its collection in the collections/show display. Set to &lsquo;000000&rsquo; as default. This will get updated every time a document page from the document is saved, approved, or unapproved.</p></td></tr><tr><td><p>Percent needs review</p></td><td><p>scripto:Percent Needs Review</p></td><td><p>Percentage of pages with status &lsquo;Needs Review&rsquo;. No default needed. This will get updated every time a document page from the document is saved, approved, or unapproved.</p></td></tr><tr><td><p>Percent completed</p></td><td><p>scripto:Percent Completed</p></td><td><p>Percentage of pages with status &lsquo;Completed&rsquo;. This will get updated every time a document page from the document is saved, approved, or unapproved.</p></td></tr></tbody></table>
+<table border="1"><tbody>
+<tr><td><p><strong>Element</strong></p></td><td><p><strong>Omeka element</strong></p></td><td><p><strong>Comments</strong></p></td></tr>
+<tr><td><p>Title</p></td><td><p>dc:Title</p></td><td><p>The title of the document</p></td></tr><tr><td><p>Source URL</p></td><td><p>dc:Source</p></td><td><p>(optional) The URL for the original location or master record for the document (If you are replicating the document from another digital environment).</p></td></tr>
+<tr><td><p>Source identifier</p></td><td><p>dc:Identifier</p></td><td><p>(optional) An identifier for the document that ties it to the original location or master record (If you are replicating the document from another digital environment). Note that Omeka will generate a system identifier for each document (item).</p></td></tr>
+<tr><td><p>Digital collection URL</p></td><td><p>dc:Is Part Of</p></td><td><p>(optional) The URL for the digital collection that the document belongs to in its original digital environment (If you are replicating the document from another digital environment).</p></td></tr>
+<tr><td><p>Finding aid URL</p></td><td><p>dc:Relation</p></td><td><p>(optional) The URL for the finding aid of the document&rsquo;s source collection. </p></td></tr>
+<tr><td><p>Sorting number</p></td><td><p>dc:Audience</p></td><td><p>6-digit number for sorting the item within its collection in the collections/show display. Set to &lsquo;000000&rsquo; as default. This will get updated every time a document page from the document is saved, approved, or unapproved.</p></td></tr>
+<tr><td><p>Percent needs review</p></td><td><p>scripto:Percent Needs Review</p></td><td><p>Percentage of pages with status &lsquo;Needs Review&rsquo;. No default needed. This will get updated every time a document page from the document is saved, approved, or unapproved.</p></td></tr>
+<tr><td><p>Percent completed</p></td><td><p>scripto:Percent Completed</p></td><td><p>Percentage of pages with status &lsquo;Completed&rsquo;. This will get updated every time a document page from the document is saved, approved, or unapproved.</p></td></tr>
+</tbody></table>
 
 **Page-level (file) metadata**
 
-<table border="1"><tbody><tr><td><p><strong>Element</strong></p></td><td><p><strong>Omeka element</strong></p></td><td><p><strong>Comments</strong></p></td></tr><tr><td><p>Original filename</p></td><td><p></p></td><td><p>The file location specified in the csv item upload file. The UI Libraries fork of plugin-CsvImport uses this filename to find the Omeka file record for applying the page-level metadata.</p></td></tr><tr><td><p>Page label</p></td><td><p>dc:Title</p></td><td><p>The label for the page</p></td></tr><tr><td><p>Page-level source URL</p></td><td><p>dc:Source</p></td><td><p>(optional) The URL for the original location or master record for the document page (If you are replicating the document from another digital environment).</p></td></tr><tr><td><p>Source identifier</p></td><td><p>dc:identifier</p></td><td><p>(optional) An identifier for the document page that ties it to the original location or master record (If you are replicating the document from another digital environment). Note that Omeka will generate a system identifier for each document page (file).</p></td></tr><tr><td><p>Transcription</p></td><td><p>scripto:Transcription</p></td><td><p>The transcription for the document page. This will get updated every time a document page is saved or approved. You may pre-populate this field on ingest to Omeka with OCR or existing transcription, if desired.</p></td></tr><tr><td><p>Status</p></td><td><p>scripto:Status</p></td><td><p>Completion status of the document page (&lsquo;Not Started&rsquo;, &lsquo;Needs Review&rsquo;, &lsquo;Completed&rsquo;). Set to &lsquo;Not Started&rsquo; as default. This will get updated every time a document page is saved, approved, or unapproved.</p></td></tr><tr><td><p>Omeka file order</p></td><td><p>no map</p></td><td><p>The order of the page within the document. When used with the ui-libraries/plugin-Csv-Import fork, this value will assure files are in the correct sequence.</p></td></tr></tbody></table>
+<table border="1"><tbody>
+<tr><td><p><strong>Element</strong></p></td><td><p><strong>Omeka element</strong></p></td><td><p><strong>Comments</strong></p></td></tr>
+<tr><td><p>Original filename</p></td><td><p></p></td><td><p>The file location specified in the csv item upload file. The UI Libraries fork of plugin-CsvImport uses this filename to find the Omeka file record for applying the page-level metadata.</p></td></tr>
+<tr><td><p>Page label</p></td><td><p>dc:Title</p></td><td><p>The label for the page</p></td></tr>
+<tr><td><p>Page-level source URL</p></td><td><p>dc:Source</p></td><td><p>(optional) The URL for the original location or master record for the document page (If you are replicating the document from another digital environment).</p></td></tr>
+<tr><td><p>Source identifier</p></td><td><p>dc:identifier</p></td><td><p>(optional) An identifier for the document page that ties it to the original location or master record (If you are replicating the document from another digital environment). Note that Omeka will generate a system identifier for each document page (file).</p></td></tr>
+<tr><td><p>Transcription</p></td><td><p>scripto:Transcription</p></td><td><p>The transcription for the document page. This will get updated every time a document page is saved or approved. You may pre-populate this field on ingest to Omeka with OCR or existing transcription, if desired.</p></td></tr>
+<tr><td><p>Status</p></td><td><p>scripto:Status</p></td><td><p>Completion status of the document page (&lsquo;Not Started&rsquo;, &lsquo;Needs Review&rsquo;, &lsquo;Completed&rsquo;). Set to &lsquo;Not Started&rsquo; as default. This will get updated every time a document page is saved, approved, or unapproved.</p></td></tr>
+<tr><td><p>Omeka file order</p></td><td><p>no map</p></td><td><p>The order of the page within the document. When used with the ui-libraries/plugin-Csv-Import fork, this value will assure files are in the correct sequence.</p></td></tr>
+</tbody></table>
 
 
 Warning
@@ -143,7 +163,8 @@ Current maintainers:
 
 First version of this plugin has been built by [Center for History & New Media].
 Next, [UI libraries] has forked it in order to add some features. This fork has
-been merged into the main version for Omeka 2 for [Mines ParisTech].
+been merged into the main version for Omeka 2 for [Mines ParisTech] and
+completed.
 
 
 Copyright

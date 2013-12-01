@@ -56,6 +56,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         'scripto_viewer_class' => '',
         'scripto_use_google_docs_viewer' => '',
         'scripto_iframe_class' => '"',
+        'scripto_files_order' => '',
         'scripto_import_type' => null,
         'scripto_home_page_text' => '<p>Scripto</p>',
     );
@@ -329,6 +330,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         set_option('scripto_viewer_class', trim($post['scripto_viewer_class']));
         set_option('scripto_use_google_docs_viewer', $post['scripto_use_google_docs_viewer']);
         set_option('scripto_iframe_class', trim($post['scripto_iframe_class']));
+        set_option('scripto_files_order', trim($post['scripto_files_order']));
         set_option('scripto_import_type', $post['scripto_import_type']);
         set_option('scripto_home_page_text', trim($post['scripto_home_page_text']));
     }
