@@ -1,0 +1,20 @@
+a.scripto-toggle-status.status {
+    position:relative;
+/*    left: -20px;*/
+    padding-left: 20px;
+    margin-left: 3px;
+    margin-right: 3px;
+    cursor: pointer;
+}
+a.scripto-toggle-status.undefined {
+    background: url('../../../../../application/views/scripts/images/silk-icons/error.png') no-repeat scroll 0 0 transparent;
+}
+a.scripto-toggle-status.to-transcribe {
+    background: url('../../../../../application/views/scripts/images/silk-icons/tick.png') no-repeat scroll 0 0 transparent;
+}
+a.scripto-toggle-status.not-to-transcribe {
+    background: url('../../../../../application/views/scripts/images/silk-icons/cancel.png') no-repeat scroll 0 0 transparent;
+}
+a.scripto-toggle-status.transmit {
+    background: url('../../shared/images/waiting-mini.gif') no-repeat scroll 0 0 transparent;
+}

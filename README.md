@@ -10,14 +10,14 @@ that allows collaborative transcription of digital files. Built on [MediaWiki],
 Scripto is intended to be used as an extension of a content management system.
 Scripto is currently available as a plugin for [Omeka], Wordpress, and Drupal.
 
-[DIYHistory|transcribe] uses Scripto with Omeka. Visit [DIYhistor|code] for an
+[DIYHistory|transcribe] uses Scripto with Omeka. Visit [DIYhistory|code] for an
 overview of the technology stack and implementation information.
 
 Features of the Scripto plugin for Omeka can be found at [Github|Scripto]. The
 UI Libraries fork of plugin-Scripto adds the following features:
 
 * Track completion status of document pages (i.e., ‘Not Started’, ‘Needs
-Review’, ‘Completed’)
+Review’, ‘Completed’).
 * Track completion progress of documents based on page statuses.
 * Sort documents within their collection by most completed, floating least
 completed to the top.
@@ -25,6 +25,8 @@ completed to the top.
 (helpful if using Scripto to correct OCR for typescript pages).
 * On every page action, automatically import transcriptions from MediaWiki as
 file metadata.
+* Possibility to define items that should not be transcribed via the admin page
+items/show.
 
 The UI Libraries has also created an Omeka theme, [Scribe], to make use of these
 new features.

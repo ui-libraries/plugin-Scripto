@@ -29,7 +29,10 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         'define_routes',
         'config_form',
         'config',
+        'admin_head',
         'public_items_show',
+        'admin_items_browse_simple_each',
+        'admin_items_browse',
         'admin_items_show',
     );
 
@@ -312,6 +315,65 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         set_option('scripto_home_page_text', trim($post['scripto_home_page_text']));
     }
 
+    public function hookAdminHead($args)
+    {
+        $request = Zend_Controller_Front::getInstance()->getRequest();
+        $controller = $request->getControllerName();
+        $action = $request->getActionName();
+        if ($controller == 'items' && $action == 'browse') {
+            queue_css_file('scripto');
+            queue_js_file('scripto');
+        }
+    }
+
+    public function hookAdminItemsBrowseSimpleEach($args)
+    {
+        $view = $args['view'];
+        $item = $args['item'];
+
+        $status = $item->getElementTexts('Scripto', 'Status');
+        if (empty($status)) {
+            $statusClass = 'undefined';
+            $statusText = __('Undefined');
+        }
+        else {
+            switch ($status[0]->text) {
+                case 'Not to transcribe':
+                    $statusClass = 'not-to-transcribe';
+                    $statusText = __('Not to transcribe');
+                    break;
+                case 'To transcribe':
+                    $statusClass = 'to-transcribe';
+                    $statusText = __('To transcribe');
+                    break;
+                case 'Undefined':
+                default:
+                    $statusClass = 'undefined';
+                    $statusText = __('Undefined');
+            }
+        }
+        $html = '<a href="' . ADMIN_BASE_URL . '" id="scripto-%d" class="scripto-toggle-status status %s">%s</a>';
+        $args = array();
+        $args[] = $item->id;
+        $args[] = $statusClass;
+        $args[] = $statusText;
+
+        echo '<p>' . __('Scripto: %s', vsprintf($html, $args)) . '</p>';
+    }
+
+    public function hookAdminItemsBrowse($args)
+    { ?>
+<script type="text/javascript">
+    Omeka.messages = jQuery.extend(Omeka.messages,
+        {'scripto':{
+            'notToTranscribe':'<?php echo __('Not to transcribe'); ?>',
+            'toTranscribe':'<?php echo __('To transcribe'); ?>'
+        }}
+    );
+</script>
+    <?php
+    }
+
     /**
      * Append the transcribe link to the public items show page.
      */
@@ -441,6 +503,21 @@ jQuery(document).ready(function() {
         }
 
         return new Scripto(new ScriptoAdapterOmeka, array('api_url' => $apiUrl));
+    }
+
+    /**
+     * Helper to determine if an item may be transcribed or not.
+     *
+     * An item may be transcribed if its status is not 'Not to transcribe' and
+     * if it get one file or more. This is determined via the scripto check.
+     */
+    public static function isToTranscribe($item = null)
+    {
+        if ($item == null) {
+            $item = get_current_record('item');
+        }
+        $scripto = self::getScripto();
+        return $scripto->documentExists($item->id);
     }
 
     /**

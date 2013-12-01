@@ -10,6 +10,11 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
     private $_db;
 
     /**
+     * @var Item
+     */
+    private $_item;
+
+    /**
      * Set the database object on construction.
      */
     public function __construct()
@@ -25,7 +30,8 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
      */
     public function documentExists($documentId)
     {
-        return $this->_validDocument($this->_getItem($documentId));
+        $this->_item = $this->_getItem($documentId);
+        return $this->_validDocument();
     }
 
     /**
@@ -37,10 +43,11 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
      */
     public function documentPageExists($documentId, $pageId)
     {
-        $item = $this->_getItem($documentId);
-        if (false == $this->_validDocument($item)) {
+        if (!$this->documentExists($documentId)) {
             return false;
         }
+        $item = $this->_item;
+
         // The Omeka file ID must match the Scripto page ID.
         $files = $item->Files;
         foreach ($files as $file) {
@@ -60,7 +67,11 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
      */
     public function getDocumentPages($documentId)
     {
-        $item = $this->_getItem($documentId);
+        if (!$this->documentExists($documentId)) {
+            return false;
+        }
+        $item = $this->_item;
+
         $documentPages = array();
         foreach ($item->Files as $file) {
             // The page name is either the Dublin Core title of the file or the
@@ -85,6 +96,10 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
      */
     public function getDocumentPageFileUrl($documentId, $pageId)
     {
+        if (!$this->documentExists($documentId)) {
+            return false;
+        }
+
         $file = $this->_getFile($pageId);
         return $file->getWebPath('original');
     }
@@ -97,7 +112,11 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
      */
     public function getDocumentFirstPageId($documentId)
     {
-        $item = $this->_getItem($documentId);
+        if (!$this->documentExists($documentId)) {
+            return false;
+        }
+        $item = $this->_item;
+
         return $item->Files[0]->id;
     }
 
@@ -109,7 +128,11 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
      */
     public function getDocumentTitle($documentId)
     {
-        $item = $this->_getItem($documentId);
+        if (!$this->documentExists($documentId)) {
+            return false;
+        }
+        $item = $this->_item;
+
         $titles = $item->getElementTexts('Dublin Core', 'Title');
         if (empty($titles)) {
             return '';
@@ -126,6 +149,10 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
      */
     public function getDocumentPageName($documentId, $pageId)
     {
+        if (!$this->documentExists($documentId)) {
+            return false;
+        }
+
         $file = $this->_getFile($pageId);
 
         // The page name is either the Dublin Core title of the file or the
@@ -148,6 +175,9 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
     public function getDocumentPageTranscription($pageId)
     {
         $file = $this->_getFile($pageId);
+        if (!$this->documentExists($file->item_id)) {
+            return false;
+        }
 
         // The transcription text comes from the Scripto transcription field of the file.
         // If no existing transcription, then return null.
@@ -188,6 +218,10 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
      */
     public function importDocumentPageTranscription($documentId, $pageId, $text)
     {
+        if (!$this->documentExists($documentId)) {
+            return false;
+        }
+
         $file = $this->_getFile($pageId);
         $element = $file->getElement('Scripto', 'Transcription');
         $file->deleteElementTextsByElementId(array($element->id));
@@ -209,7 +243,11 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
      */
     public function importDocumentTranscription($documentId, $text)
     {
-        $item = $this->_getItem($documentId);
+        if (!$this->documentExists($documentId)) {
+            return false;
+        }
+        $item = $this->_item;
+
         $element = $item->getElement('Scripto', 'Transcription');
         $item->deleteElementTextsByElementId(array($element->id));
         $isHtml = false;
@@ -231,6 +269,10 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
     public function documentPageTranscriptionStatus($pageId)
     {
         $file = $this->_getFile($pageId);
+        if (!$this->documentExists($file->item_id)) {
+            return false;
+        }
+
         $elementTexts = $file->getElementTexts('Scripto', 'Status');
         foreach ($elementTexts as $elementText) {
             $status = $elementText->text;
@@ -254,6 +296,10 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
     {
         // Delete current transcription status.
         $file = $this->_getFile($pageId);
+        if (!$this->documentExists($file->item_id)) {
+            return false;
+        }
+
         $element = $file->getElement('Scripto', 'Status');
         $file->deleteElementTextsByElementId(array($element->id));
         // Save status to Omeka.
@@ -270,7 +316,11 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
     public function importDocumentTranscriptionProgress($documentId, $completedProgress, $needsReviewProgress)
     {
         // Delete current values for Percent Completed and Percent Needs Review.
-        $item = $this->_getItem($documentId);
+        if (!$this->documentExists($documentId)) {
+            return false;
+        }
+        $item = $this->_item;
+
         $completed = $item->getElement('Scripto', 'Percent Completed');
         $needsReview = $item->getElement('Scripto', 'Percent Needs Review');
         $item->deleteElementTextsByElementId(array($completed->id));
@@ -294,7 +344,11 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
     public function importItemSortWeight($documentId, $weight)
     {
         // Delete current value of item sort weight.
-        $item = $this->_getItem($documentId);
+        if (!$this->documentExists($documentId)) {
+            return false;
+        }
+        $item = $this->_item;
+
         $sortWeight = $item->getElement('Dublin Core', 'Audience');
         $item->deleteElementTextsByElementId(array($sortWeight->id));
         // Save sort weight to Omeka.
@@ -331,14 +385,25 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
      * @param Item $item
      * @return bool
      */
-    private function _validDocument($item)
+    private function _validDocument()
     {
+        $item = $this->_item;
+
+        // Check item.
+        if (empty($item)) {
+            return false;
+        }
         // The item must exist.
         if (!($item instanceof Item)) {
             return false;
         }
         // The item must have at least one file assigned to it.
         if (!isset($item->Files[0])) {
+            return false;
+        }
+        // The item must not have status 'Not to transcribe'.
+        $status = $item->getElementTexts('Scripto', 'Status');
+        if (!empty($status) && $status[0]->text == 'Not to transcribe') {
             return false;
         }
         return true;
