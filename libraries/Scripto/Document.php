@@ -854,7 +854,8 @@ class Scripto_Document
     }
 
     /**
-     * Set the sort weight for the item based on percent completed and percent needs review.
+     * Set the sort weight for the item based on percent completed and percent
+     * needs review.
      *
      * @uses Scripto_Adapter_Interface::importItemsortWeight()
      */
@@ -862,7 +863,7 @@ class Scripto_Document
     {
         $counts = $this->getItemStatusCounts();
         // Calculate inverse percents needs review and completed.
-        $needsReview = number_format(((100 -($counts['partial'] / $counts['total']) * 100)), 0);
+        $needsReview = number_format(((100 - ($counts['partial'] / $counts['total']) * 100)), 0);
         $completed = number_format(((100 - ($counts['completed'] / $counts['total']) * 100)), 0);
         // Calculate percent needs review + completed.
         $total = (100 - $needsReview) + (100 - $completed);
@@ -870,7 +871,7 @@ class Scripto_Document
         $needsReview = str_pad($needsReview, 3, '0', STR_PAD_LEFT);
         $completed = str_pad($completed, 3, '0', STR_PAD_LEFT);
         $total = str_pad($total, 3, '0', STR_PAD_LEFT);
-        // Concatenate all three numbers for the 9 digit sort weight.
+        // Concatenate numbers for the 6 digit sort weight.
         $weight = $total . $needsReview;
         // Save to item-level record.
         $this->_adapter->importItemSortWeight($this->_id, $weight);

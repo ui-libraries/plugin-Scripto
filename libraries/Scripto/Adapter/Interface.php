@@ -165,7 +165,7 @@ interface Scripto_Adapter_Interface
      * Set the item sort weight in the external system.
      *
      * @param int|string $documentId The document ID
-     * @param int|string $weight The 9 digit sort weight
+     * @param int|string $weight The 6 digit sort weight
      */
     public function importItemSortWeight($documentId, $weight);
 }

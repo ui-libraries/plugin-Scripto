@@ -339,10 +339,10 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
     }
 
     /**
-     * Set the item sort weight in item-level Omeka record ('Audience', 'Dublin Core').
+     * Set the item sort weight in item-level Omeka record ('Scripto', 'Weight').
      *
      * @param int|string $documentId The document ID
-     * @param int|string $weight The 9 digit sort weight
+     * @param int|string $weight The 6 digit sort weight
      */
     public function importItemSortWeight($documentId, $weight)
     {
@@ -352,7 +352,7 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
         }
         $item = $this->_item;
 
-        $sortWeight = $item->getElement('Dublin Core', 'Audience');
+        $sortWeight = $item->getElement('Scripto', 'Weight');
         $item->deleteElementTextsByElementId(array($sortWeight->id));
         // Save sort weight to Omeka.
         $item->addTextForElement($sortWeight, $weight);

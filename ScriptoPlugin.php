@@ -206,22 +206,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
             );
         }
 
-        $elementSetMetadata = array(
-            'name' => self::ELEMENT_SET_NAME,
-            'description' => 'Manages transcriptions of items and files',
-            'record_type' => NULL,
-        );
-        $elements = array(
-            array('name' => 'Transcription',
-                  'description' => 'A written representation of a document.'),
-            array('name' => 'Status',
-                  'description' => 'The current transcription status of a document.'),
-            array('name' => 'Percent Needs Review',
-                  'description' => 'The percentage of pages with Needs Review status.'),
-            array('name' => 'Percent Completed',
-                  'description' => 'The percentage of pages with Completed status.')
-        );
-        insert_element_set($elementSetMetadata, $elements);
+        $this->_setScriptoSet();
 
         $this->_installOptions();
     }
@@ -237,7 +222,52 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         if (version_compare($oldVersion, '2.2', '<')) {
             delete_option('scripto_viewer_css');
             delete_option('scripto_iframe_properties');
+
+            $this->_setScriptoSet();
         }
+    }
+
+    private function _setScriptoSet()
+    {
+        // Create the set if needed.
+        $elementSet = get_record('ElementSet', array('name' => self::ELEMENT_SET_NAME));
+        if (!$elementSet) {
+            $elementSetMetadata = array(
+                'name' => self::ELEMENT_SET_NAME,
+                'description' => 'Manages transcriptions of items and files',
+                'record_type' => NULL,
+            );
+            insert_element_set($elementSetMetadata, array());
+            $elementSet = get_record('ElementSet', array('name' => self::ELEMENT_SET_NAME));
+        }
+
+        // Fill the set if needed.
+        $elements = array(
+            array('name' => 'Transcription',
+                  'description' => 'A written representation of a document or a page.'),
+            array('name' => 'Status',
+                  'description' => 'The current transcription status of a document or a page.'),
+            array('name' => 'Percent Needs Review',
+                  'description' => 'The percentage of pages with Needs Review status.'),
+            array('name' => 'Percent Completed',
+                  'description' => 'The percentage of pages with Completed status.'),
+            array('name' => 'Weight',
+                  'description' => 'A 6-digit number used to sort items quickly.'),
+        );
+
+        // Remove existing elements.
+        $existingElements = $elementSet->getElements();
+        foreach ($existingElements as $existingElement) {
+            foreach ($elements as $key => $newElement) {
+                if ($newElement['name'] == $existingElement->name) {
+                    unset($elements[$key]);
+                }
+            }
+        }
+
+        // Save new elements if any.
+        $elementSet->addElements($elements);
+        $elementSet->save();
     }
 
     /**

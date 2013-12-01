@@ -39,30 +39,24 @@ original filename or file id.
 The UI Libraries has also created an Omeka theme, [Scribe], to make use of these
 new features.
 
-To accommodate these features, UI Libraries has added three elements to the
-Scripto metadata element set: “Status”, “Percent Needs Review”, and “Percent
-Completed”. These values are calculated and updated with every “Save”,
-“Approve”, or “Unapprove” action made on a document page. Additionally, with
-every action, a 6-digit sorting number is calculated and stored in dc:Audience.
+To accommodate these features, UI Libraries has added four elements to the
+Scripto metadata element set: “Status”, “Percent Needs Review”, “Percent
+Completed” and “Weight”. These values are calculated and updated with every
+“Save”, “Approve”, or “Unapprove” action made on a document page.
 
 “Status” stores the completion status of a document page (i.e., “Not Started”,
 “Needs Review”, “Completed”) in the page-level metadata. Scribe displays this
-value on each page thumbnail in the items/show page. Values for “Percent Needs
-Review” and “Percent Completed” are stored at the document (item) level and
-represent the percentage of pages within the document carrying the “Needs
-Review” and “Completed” statuses, respectively. These percentages are used by
-Scribe to display the stacked progress bars for each item in the
-collections/show page. The sorting number stored in dc:Audience is used by
-Scribe to sort items on collections/show page by completion progress, sinking
-the most completed items to the bottom and floating the least completed to the
-top.
+value on each page thumbnail in the items/show page.
 
-The new fields for the Scripto element set will automatically be installed with
-a fresh install of the UI Libraries fork of plugin-Scripto. If you are currently
-running the Scripto plugin and do not wish to lose your existing Scripto data,
-you can instead manually add the new metadata elements (found in ScriptoPlugin.php)
-to the elements table in Omeka, and replace your plugin code with the
-UI Libraries version.
+In the document (item) level metadata, “Status” stores the status of a document.
+Currently, this is used only for the status “Not to transcribe”. Values for
+“Percent Needs Review” and “Percent Completed” represent the percentage of pages
+within the document carrying the “Needs Review” and “Completed” statuses,
+respectively. These percentages are used by Scribe to display the stacked
+progress bars for each item in the collections/show page. The 6-digit sorting
+number stored in “Weight” is used by Scribe to sort items on collections/show
+page by completion progress, sinking the most completed items to the bottom and
+floating the least completed to the top.
 
 
 Installation
@@ -72,8 +66,9 @@ Uncompress files and rename plugin folder "Scripto".
 
 Then install it like any other Omeka plugin and follow the config instructions.
 
-See above to upgrade from the standard Scripto plugin without losing existing
-data.
+The new fields for the Scripto element set will automatically be installed with
+a fresh install of the UI Libraries fork of plugin-Scripto or with an upgrade
+of the upstream version.
 
 
 Metadata
@@ -100,9 +95,9 @@ this [sample] gist helpful in generating csv upload files.
 <tr><td><p>Source identifier</p></td><td><p>dc:Identifier</p></td><td><p>(optional) An identifier for the document that ties it to the original location or master record (If you are replicating the document from another digital environment). Note that Omeka will generate a system identifier for each document (item).</p></td></tr>
 <tr><td><p>Digital collection URL</p></td><td><p>dc:Is Part Of</p></td><td><p>(optional) The URL for the digital collection that the document belongs to in its original digital environment (If you are replicating the document from another digital environment).</p></td></tr>
 <tr><td><p>Finding aid URL</p></td><td><p>dc:Relation</p></td><td><p>(optional) The URL for the finding aid of the document&rsquo;s source collection. </p></td></tr>
-<tr><td><p>Sorting number</p></td><td><p>dc:Audience</p></td><td><p>6-digit number for sorting the item within its collection in the collections/show display. Set to &lsquo;000000&rsquo; as default. This will get updated every time a document page from the document is saved, approved, or unapproved.</p></td></tr>
-<tr><td><p>Percent needs review</p></td><td><p>scripto:Percent Needs Review</p></td><td><p>Percentage of pages with status &lsquo;Needs Review&rsquo;. No default needed. This will get updated every time a document page from the document is saved, approved, or unapproved.</p></td></tr>
-<tr><td><p>Percent completed</p></td><td><p>scripto:Percent Completed</p></td><td><p>Percentage of pages with status &lsquo;Completed&rsquo;. This will get updated every time a document page from the document is saved, approved, or unapproved.</p></td></tr>
+<tr><td><p>Sorting number</p></td><td><p>Scripto:Weight</p></td><td><p>6-digit number for sorting the item within its collection in the collections/show display. Set to &lsquo;000000&rsquo; as default. This will get updated every time a document page from the document is saved, approved, or unapproved.</p></td></tr>
+<tr><td><p>Percent needs review</p></td><td><p>Scripto:Percent Needs Review</p></td><td><p>Percentage of pages with status &lsquo;Needs Review&rsquo;. No default needed. This will get updated every time a document page from the document is saved, approved, or unapproved.</p></td></tr>
+<tr><td><p>Percent completed</p></td><td><p>Scripto:Percent Completed</p></td><td><p>Percentage of pages with status &lsquo;Completed&rsquo;. This will get updated every time a document page from the document is saved, approved, or unapproved.</p></td></tr>
 </tbody></table>
 
 **Page-level (file) metadata**
@@ -113,8 +108,8 @@ this [sample] gist helpful in generating csv upload files.
 <tr><td><p>Page label</p></td><td><p>dc:Title</p></td><td><p>The label for the page</p></td></tr>
 <tr><td><p>Page-level source URL</p></td><td><p>dc:Source</p></td><td><p>(optional) The URL for the original location or master record for the document page (If you are replicating the document from another digital environment).</p></td></tr>
 <tr><td><p>Source identifier</p></td><td><p>dc:identifier</p></td><td><p>(optional) An identifier for the document page that ties it to the original location or master record (If you are replicating the document from another digital environment). Note that Omeka will generate a system identifier for each document page (file).</p></td></tr>
-<tr><td><p>Transcription</p></td><td><p>scripto:Transcription</p></td><td><p>The transcription for the document page. This will get updated every time a document page is saved or approved. You may pre-populate this field on ingest to Omeka with OCR or existing transcription, if desired.</p></td></tr>
-<tr><td><p>Status</p></td><td><p>scripto:Status</p></td><td><p>Completion status of the document page (&lsquo;Not Started&rsquo;, &lsquo;Needs Review&rsquo;, &lsquo;Completed&rsquo;). Set to &lsquo;Not Started&rsquo; as default. This will get updated every time a document page is saved, approved, or unapproved.</p></td></tr>
+<tr><td><p>Transcription</p></td><td><p>Scripto:Transcription</p></td><td><p>The transcription for the document page. This will get updated every time a document page is saved or approved. You may pre-populate this field on ingest to Omeka with OCR or existing transcription, if desired.</p></td></tr>
+<tr><td><p>Status</p></td><td><p>Scripto:Status</p></td><td><p>Completion status of the document page (&lsquo;Not Started&rsquo;, &lsquo;Needs Review&rsquo;, &lsquo;Completed&rsquo;). Set to &lsquo;Not Started&rsquo; as default. This will get updated every time a document page is saved, approved, or unapproved.</p></td></tr>
 <tr><td><p>Omeka file order</p></td><td><p>no map</p></td><td><p>The order of the page within the document. When used with the ui-libraries/plugin-Csv-Import fork, this value will assure files are in the correct sequence.</p></td></tr>
 </tbody></table>
 
@@ -163,8 +158,8 @@ Current maintainers:
 
 First version of this plugin has been built by [Center for History & New Media].
 Next, [UI libraries] has forked it in order to add some features. This fork has
-been merged into the main version for Omeka 2 for [Mines ParisTech] and
-completed.
+been merged into the main version for Omeka 2 for [École des Mines ParisTech]
+and completed.
 
 
 Copyright
@@ -177,7 +172,7 @@ Copyright
 
 [Scripto]: http://scripto.org/
 [Center for History & New Media]: http://chnm.gmu.edu/
-[MediaWiki]: https://
+[MediaWiki]: https://www.mediawiki.org
 [Omeka]: https://omeka.org
 [DIYHistory|transcribe]: http://diyhistory.lib.uiowa.edu/transcribe/
 [DIYHistory|code]: http://diyhistory.lib.uiowa.edu/code.html
@@ -188,5 +183,5 @@ Copyright
 [Scripto issues]: https://github.com/Omeka/plugin-Scripto/Issues
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html "GNU/GPL v3"
 [Daniel-KM]: https://github.com/Daniel-KM "Daniel Berthereau"
-[UI Libraries]: http://
-[Mines ParisTech]: http://bib.mines-paristech.fr "Mines ParisTech / ENSMP"
+[UI Libraries]: http://www.lib.uiowa.edu "University of Iowa Libraries"
+[École des Mines ParisTech]: http://bib.mines-paristech.fr
