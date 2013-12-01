@@ -76,16 +76,15 @@
 
 <div class="field">
     <div class="two columns alpha">
-        <label for="scripto_viewer_css"><?php echo __('CSS style to add to the image viewer'); ?></label>
+        <label for="scripto_viewer_class"><?php echo __('Class to add to the image viewer'); ?></label>
     </div>
     <div class="inputs five columns omega">
         <p class="explanation"><?php echo __(
-            'This style will be added as value of attribute to the image viewer '
-            . 'in order to get a default size and other properties.'
+            'If any, this class will be added to the image viewer.'
         ); ?></p>
         <?php echo $this->formText(
-            'scripto_viewer_css',
-            $this->viewer_css
+            'scripto_viewer_class',
+            get_option('scripto_viewer_class')
         ); ?>
     </div>
 </div>
@@ -111,16 +110,15 @@
 
 <div class="field">
     <div class="two columns alpha">
-        <label for="scripto_iframe_properties"><?php echo __('Properties to add to the document viewer'); ?></label>
+        <label for="scripto_iframe_class"><?php echo __('Class to add to the document viewer'); ?></label>
     </div>
     <div class="inputs five columns omega">
         <p class="explanation"><?php echo __(
-            'These properties will be added as attributes to the document viewer '
-            . 'in order to get a default size and other properties.'
+            'If any, this class will be added to the document viewer.'
         ); ?></p>
         <?php echo $this->formText(
-            'scripto_iframe_properties',
-            $this->iframe_properties
+            'scripto_iframe_class',
+            get_option('scripto_iframe_class')
         ); ?>
     </div>
 </div>

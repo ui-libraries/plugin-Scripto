@@ -24,17 +24,18 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
     protected $_hooks = array(
         'initialize',
         'install',
+        'upgrade',
         'uninstall',
         'uninstall_message',
         'define_routes',
         'config_form',
         'config',
         'admin_head',
-        'public_items_show',
         'admin_items_browse_simple_each',
         'admin_items_browse_detailed_each',
         'admin_items_browse',
         'admin_items_show',
+        'public_items_show',
     );
 
     /**
@@ -52,9 +53,9 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         'scripto_mediawiki_api_url' => '',
         'scripto_source_element' => 'Scripto:Transcription',
         'scripto_image_viewer' => null,
-        'scripto_viewer_css' => 'height: 400px; border: 1px grey solid; margin-bottom: 12px;',
+        'scripto_viewer_class' => '',
         'scripto_use_google_docs_viewer' => '',
-        'scripto_iframe_properties' => 'width="500" height="600" style="border: none;"',
+        'scripto_iframe_class' => '"',
         'scripto_import_type' => null,
         'scripto_home_page_text' => '<p>Scripto</p>',
     );
@@ -225,6 +226,20 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
+     * Upgrades the plugin.
+     */
+    public function hookUpgrade($args)
+    {
+        $oldVersion = $args['old_version'];
+        $newVersion = $args['new_version'];
+
+        if (version_compare($oldVersion, '2.2', '<')) {
+            delete_option('scripto_viewer_css');
+            delete_option('scripto_iframe_properties');
+        }
+    }
+
+    /**
      * Uninstall Scripto.
      */
     public function hookUninstall()
@@ -275,17 +290,9 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         if (!in_array($imageViewer, array('openlayers', 'zoomit'))) {
             $imageViewer = 'default';
         }
-        $viewerCss = get_option('scripto_viewer_css');
-        if (is_null($viewerCss)) {
-            set_option('scripto_viewer_css', $this->_options['scripto_viewer_css']);
-        }
         $useGoogleDocsViewer = get_option('scripto_use_google_docs_viewer');
         if (is_null($useGoogleDocsViewer)) {
             $useGoogleDocsViewer = 0;
-        }
-        $iframeProterties = get_option('scripto_iframe_properties');
-        if (is_null($iframeProterties)) {
-            set_option('scripto_iframe_properties', $this->_options['scripto_iframe_properties']);
         }
         $importType = get_option('scripto_import_type');
         if (is_null($importType)) {
@@ -295,9 +302,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         echo get_view()->partial('plugins/scripto-config-form.php', array(
             'element_id' => $element->id,
             'image_viewer' => $imageViewer,
-            'viewer_css' => $viewerCss,
             'use_google_docs_viewer' => $useGoogleDocsViewer,
-            'iframe_properties' => $iframeProterties,
             'import_type' => $importType,
         ));
     }
@@ -321,9 +326,9 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         set_option('scripto_mediawiki_api_url', trim($post['scripto_mediawiki_api_url']));
         set_option('scripto_source_element', $element->set_name . ':' . $element->name);
         set_option('scripto_image_viewer', $post['scripto_image_viewer']);
-        set_option('scripto_viewer_css', trim($post['scripto_viewer_css']));
+        set_option('scripto_viewer_class', trim($post['scripto_viewer_class']));
         set_option('scripto_use_google_docs_viewer', $post['scripto_use_google_docs_viewer']);
-        set_option('scripto_iframe_properties', trim($post['scripto_iframe_properties']));
+        set_option('scripto_iframe_class', trim($post['scripto_iframe_class']));
         set_option('scripto_import_type', $post['scripto_import_type']);
         set_option('scripto_home_page_text', trim($post['scripto_home_page_text']));
     }
@@ -404,17 +409,17 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Append the transcribe link to the public items show page.
+     * Append the transcribe link to the admin items show page.
      */
-    public function hookPublicItemsShow($args)
+    public function hookAdminItemsShow($args)
     {
         $this->_appendToItemsShow($args);
     }
 
     /**
-     * Append the transcribe link to the admin items show page.
+     * Append the transcribe link to the public items show page.
      */
-    public function hookAdminItemsShow($args)
+    public function hookPublicItemsShow($args)
     {
         $this->_appendToItemsShow($args);
     }
@@ -489,7 +494,7 @@ jQuery(document).ready(function() {
     scriptoMap.zoomToMaxExtent();
 });
 </script>
-<div id="scripto-openlayers" style="<?php echo get_option('scripto_viewer_css'); ?>"></div>
+<div id="scripto-openlayers" class="<?php echo get_option('scripto_viewer_class'); ?>"></div>
 <?php
     }
 
@@ -517,7 +522,8 @@ jQuery(document).ready(function() {
             'url' => $file->getWebPath('original'),
             'embedded' => 'true',
         ));
-        echo '<iframe src="' . $uri->getUri() . '" ' . get_option('scripto_iframe_properties') . '></iframe>';
+        echo vsprintf('<iframe src="%s" id="scripto-iframe" class="%s"></iframe>',
+            array($uri->getUri(), get_option('scripto_iframe_class')));
     }
 
     /**
