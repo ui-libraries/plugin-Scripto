@@ -7,6 +7,15 @@
 class Scripto_AjaxController extends Omeka_Controller_AbstractActionController
 {
     /**
+     * Controller-wide initialization. Sets the underlying model to use.
+     */
+    public function init()
+    {
+        // Don't render the view script.
+        $this->_helper->viewRenderer->setNoRender(true);
+    }
+
+    /**
      * Handle AJAX requests to update status of an item.
      */
     public function updateAction()
@@ -29,14 +38,15 @@ class Scripto_AjaxController extends Omeka_Controller_AbstractActionController
                 $this->getResponse()->setHttpResponseCode(400);
                 return;
             }
+            $element = $item->getElement('Scripto', 'Status');
             $currentStatus = $item->getElementTexts('Scripto', 'Status');
             if (!empty($currentStatus)) {
-                if ($status === $currentStatus[0]) {
+                // Check if the status changes.
+                if ($status === $currentStatus[0]->text) {
                     return;
                 }
-                $item->setReplaceElementTexts();
+                $item->deleteElementTextsByElementId(array($element->id));
             }
-            $element = $item->getElement('Scripto', 'Status');
             $item->addTextForElement($element, $status);
             $item->save();
         } catch (Exception $e) {
@@ -110,9 +120,6 @@ class Scripto_AjaxController extends Omeka_Controller_AbstractActionController
      */
     protected function _checkAjax($action)
     {
-        // Don't render the view script.
-        $this->_helper->viewRenderer->setNoRender(true);
-
         // Only allow AJAX requests.
         $request = $this->getRequest();
         if (!$request->isXmlHttpRequest()) {
@@ -128,7 +135,7 @@ class Scripto_AjaxController extends Omeka_Controller_AbstractActionController
             return false;
         }
 
-        // All admin users are allowed.
+        // TODO All admin users are allowed.
 
         return true;
     }

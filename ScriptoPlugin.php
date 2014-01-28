@@ -417,6 +417,9 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         $item = $args['item'];
 
         $status = $item->getElementTexts('Scripto', 'Status');
+        if (empty($status) || $status[0]->text != 'To transcribe') {
+            return;
+        }
         $html = '<a href="' . ADMIN_BASE_URL . '" id="scripto-reset-%d" class="scripto fill-pages">%s</a>' ;
         $args = array();
         $args[] = $item->id;
