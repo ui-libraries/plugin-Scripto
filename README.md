@@ -167,7 +167,7 @@ Copyright
 
 * Copyright Center for History and New Media, 2008-2013
 * Copyright Shawn Averkamp, 2012-2013
-* Copyright Daniel Berthereau, 2013
+* Copyright Daniel Berthereau, 2013-2014
 
 
 [Scripto]: http://scripto.org/

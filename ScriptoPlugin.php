@@ -509,9 +509,11 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
      */
     public static function openLayers($file)
     {
+        // Check size via local path to avoid to use the server.
+        $imagePath = realpath(FILES_DIR . DIRECTORY_SEPARATOR . 'original' . DIRECTORY_SEPARATOR . $file->filename);
+        $imageSize = ScriptoPlugin::getImageSize($imagePath, 250);
+        // Image to send.
         $imageUrl = $file->getWebPath('original');
-        $imageSize = ScriptoPlugin::getImageSize($imageUrl, 250);
-
 ?>
 <script type="text/javascript">
 jQuery(document).ready(function() {
