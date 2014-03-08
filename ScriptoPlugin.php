@@ -520,7 +520,13 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
 ?>
 <script type="text/javascript">
 jQuery(document).ready(function() {
-    var scriptoMap = new OpenLayers.Map('scripto-openlayers');
+    var scriptoMap = new OpenLayers.Map('scripto-openlayers', {
+        controls: [
+            new OpenLayers.Control.Navigation(),
+            new OpenLayers.Control.PanZoom(),
+            new OpenLayers.Control.KeyboardDefaults()
+        ]
+    });
     var graphic = new OpenLayers.Layer.Image(
         'Document Page',
         <?php echo js_escape($imageUrl); ?>,
