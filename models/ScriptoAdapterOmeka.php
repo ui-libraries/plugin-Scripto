@@ -240,8 +240,8 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
     /**
      * Import an entire document's transcription into Omeka.
      *
-     * @param int|string The document ID
-     * @param string The text to import
+     * @param int|string $documentId The document ID
+     * @param string $text The text to import
      * @return bool True: success; false: fail
      */
     public function importDocumentTranscription($documentId, $text)
@@ -265,7 +265,6 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
     /**
      * Check the transcription status of a document page in the Omeka database.
      *
-     * @param int|string $documentId The documentID
      * @param int|string $pageId The page ID
      * @return string
      */
@@ -277,15 +276,49 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
         }
 
         $elementTexts = $file->getElementTexts('Scripto', 'Status');
-        foreach ($elementTexts as $elementText) {
-            $status = $elementText->text;
+        if (!empty($elementTexts)) {
+            $status = array_pop($elementTexts);
+            $status = $status->text;
         }
         if (empty($status)) {
             $status = 'Not Started';
-            return $status;
-        } else {
-            return $status;
         }
+        return $status;
+    }
+
+    /**
+     * Check the transcription status of all document pages in the Omeka base.
+     *
+     * @internal All files of the item are returned, even if they are not to
+     * transcribe.
+     *
+     * @param int|string $documentId The document ID
+     * @return array
+     */
+    public function allDocumentPagesTranscriptionStatus($documentId)
+    {
+        if (!$this->documentExists($documentId)) {
+            return false;
+        }
+        $item = $this->_item;
+
+        $db = get_db();
+        $element = $db->getTable('Element')->findByElementSetNameAndElementName('Scripto', 'Status');
+        $bind = array($item->id);
+        $sql = "
+            SELECT files.id, IFNULL(element_texts.text, 'Not Started')
+            FROM {$db->File} files
+                LEFT JOIN {$db->ElementText} element_texts
+                    ON element_texts.record_type = 'File'
+                        AND element_texts.record_id = files.id
+                        AND element_texts.element_id = $element->id
+            WHERE files.item_id = ?
+            ORDER BY
+                files.order ASC,
+                files.id ASC
+        ";
+        $result = $db->fetchPairs($sql, $bind);
+        return $result;
     }
 
     /**

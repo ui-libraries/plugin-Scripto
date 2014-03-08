@@ -682,11 +682,27 @@ class Scripto
 
     /**
      * Get transcription status for a given page.
+     *
      * @param int|string $pageId The page ID
      * @return string
      */
     public function getPageTranscriptionStatus($pageId) {
         $status = $this->_adapter->documentPageTranscriptionStatus($pageId);
+        return $status;
+    }
+
+    /**
+     * Get transcription status of all document pages in the Omeka base.
+     *
+     * @internal All files of the item are returned, even if they are not to
+     * transcribe.
+     *
+     * @param int|string $documentId The document ID
+     * @return array
+     */
+    public function getAllPagesTranscriptionStatus($documentId)
+    {
+        $status = $this->_adapter->allDocumentPagesTranscriptionStatus($documentId);
         return $status;
     }
 

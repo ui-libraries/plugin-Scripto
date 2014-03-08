@@ -130,19 +130,25 @@ interface Scripto_Adapter_Interface
     /**
      * Import an entire document's transcription into the external system.
      *
-     * @param int|string The document ID
-     * @param string The text to import
+     * @param int|string $documentId The document ID
+     * @param string $text The text to import
      * @return bool True: success; false: fail
      */
     public function importDocumentTranscription($documentId, $text);
 
     /**
      * Check the transcription status of a document page in the external system metadata.
-     * @param int|string $documentId The documentID
      * @param int|string $pageId The page ID
      * @return string
      */
     public function documentPageTranscriptionStatus($pageId);
+
+    /**
+     * Check the transcription status of all document pages in the external system metadata.
+     * @param int|string $documentId The document ID
+     * @return array
+     */
+    public function allDocumentPagesTranscriptionStatus($documentId);
 
     /**
      * Set a page transcription status in the external system.
