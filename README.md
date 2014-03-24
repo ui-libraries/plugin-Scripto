@@ -35,6 +35,8 @@ file metadata.
 items/show.
 * Choice of the order of  the pages inside a document by predefined order,
 original filename or file id.
+* Choice of the derivative image to display (default is the original one, but
+fullsize or any other derivative can be used).
 
 The UI Libraries has also created an Omeka theme, [Scribe], to make use of these
 new features.

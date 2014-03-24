@@ -121,6 +121,21 @@
 
 <div class="field">
     <div class="two columns alpha">
+        <label for="scripto_file_source"><?php echo __('File to display in the document viewer'); ?></label>
+    </div>
+    <div class="inputs five columns omega">
+        <p class="explanation"><?php echo __(
+            'If the original image is too heavy, it is possibile to choose a derivative, for example "fullsize".'
+        ); ?></p>
+        <?php echo $this->formText(
+            'scripto_file_source',
+            get_option('scripto_file_source')
+        ); ?>
+    </div>
+</div>
+
+<div class="field">
+    <div class="two columns alpha">
         <label for="scripto_files_order"><?php echo __('Order of files'); ?></label>
     </div>
     <div class="inputs five columns omega">

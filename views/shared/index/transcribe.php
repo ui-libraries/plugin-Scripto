@@ -345,7 +345,7 @@ jQuery(document).ready(function() {
 <h3><?php echo $this->doc->getPageName(); ?></h3>
 
 <!-- document viewer -->
-<?php echo file_markup($this->file, array('imageSize' => 'fullsize')); ?>
+<?php echo file_markup($this->file, array('imageSize' => get_option('scripto_file_source'))); ?>
 
 <!-- pagination -->
 <p>

@@ -295,7 +295,7 @@ class Scripto
                     'mediawiki_title'    => $value['title'],
                     'timestamp'          => $value['timestamp'],
                     'comment'            => $value['comment'],
-                    'size'               => $value['size'],
+                    'size'               => isset($value['size']) ? $value['size'] : 0,
                     'document_id'        => $documentIds[0],
                     'document_page_id'   => $documentIds[1],
                     'document_title'     => $documentTitle,
@@ -431,7 +431,7 @@ class Scripto
             }
 
             // Set the query continue, if any.
-            if (isset($response['query-continue'])) {
+            if (isset($response['query-continue']) && isset($response['query-continue']['recentchanges']['rcstart'])) {
                 $start = $response['query-continue']['recentchanges']['rcstart'];
             } else {
                 $start = null;

@@ -102,7 +102,7 @@ class ScriptoAdapterOmeka implements Scripto_Adapter_Interface
         }
 
         $file = $this->_getFile($pageId);
-        return $file->getWebPath('original');
+        return $file->getWebPath(get_option('scripto_file_source'));
     }
 
     /**

@@ -222,7 +222,7 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
         // Get the embed HTML for the Zoom.it image viewer.
         if ('zoomit' == get_option('scripto_image_viewer')) {
             $client = new Zend_Http_Client('http://api.zoom.it/v1/content');
-            $client->setParameterGet('url', $file->getWebPath('original'));
+            $client->setParameterGet('url', $file->getWebPath(get_option('scripto_file_source')));
             $response = json_decode($client->request()->getBody(), true);
             $this->view->zoomIt = $response;
         }

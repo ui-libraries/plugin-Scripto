@@ -55,7 +55,11 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         'scripto_image_viewer' => null,
         'scripto_viewer_class' => '',
         'scripto_use_google_docs_viewer' => '',
-        'scripto_iframe_class' => '"',
+        'scripto_iframe_class' => '',
+        'scripto_file_source' => 'original',
+        // This path is not really an option, but it allows to save it one time,
+        // because paths aren't available after a file is stored.
+        'scripto_file_source_path' => 'original',
         'scripto_files_order' => '',
         'scripto_import_type' => null,
         'scripto_home_page_text' => '<p>Scripto</p>',
@@ -225,6 +229,12 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
 
             $this->_setScriptoSet();
         }
+
+        $option = get_option('scripto_file_source');
+        if (empty($option)) {
+            set_option('scripto_file_source', $this->_options['scripto_file_source']);
+            set_option('scripto_file_source_path', $this->_options['scripto_file_source_path']);
+        }
     }
 
     private function _setScriptoSet()
@@ -330,6 +340,13 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
             $importType = 'html';
         }
 
+        // To be removed when there will be an upgrade process.
+        $option = get_option('scripto_file_source');
+        if (empty($option)) {
+            set_option('scripto_file_source', $this->_options['scripto_file_source']);
+            set_option('scripto_file_source_path', $this->_options['scripto_file_source_path']);
+        }
+
         echo get_view()->partial('plugins/scripto-config-form.php', array(
             'element_id' => $element->id,
             'image_viewer' => $imageViewer,
@@ -360,9 +377,12 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         set_option('scripto_viewer_class', trim($post['scripto_viewer_class']));
         set_option('scripto_use_google_docs_viewer', $post['scripto_use_google_docs_viewer']);
         set_option('scripto_iframe_class', trim($post['scripto_iframe_class']));
+        set_option('scripto_file_source', trim($post['scripto_file_source']));
         set_option('scripto_files_order', trim($post['scripto_files_order']));
         set_option('scripto_import_type', $post['scripto_import_type']);
         set_option('scripto_home_page_text', trim($post['scripto_home_page_text']));
+
+        set_option('scripto_file_source_path', $this->_getFilePath(get_option('scripto_file_source_path')));
     }
 
     public function hookAdminHead($args)
@@ -513,10 +533,10 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
     public static function openLayers($file)
     {
         // Check size via local path to avoid to use the server.
-        $imagePath = realpath(FILES_DIR . DIRECTORY_SEPARATOR . 'original' . DIRECTORY_SEPARATOR . $file->filename);
+        $imagePath = realpath(FILES_DIR . DIRECTORY_SEPARATOR . get_option('scripto_file_source_path') . DIRECTORY_SEPARATOR . $file->filename);
         $imageSize = ScriptoPlugin::getImageSize($imagePath, 250);
         // Image to send.
-        $imageUrl = $file->getWebPath('original');
+        $imageUrl = $file->getWebPath(get_option('scripto_file_source'));
 ?>
 <script type="text/javascript">
 jQuery(document).ready(function() {
@@ -562,7 +582,7 @@ jQuery(document).ready(function() {
     {
         $uri = Zend_Uri::factory('http://docs.google.com/viewer');
         $uri->setQuery(array(
-            'url' => $file->getWebPath('original'),
+            'url' => $file->getWebPath(get_option('scripto_file_source')),
             'embedded' => 'true',
         ));
         echo vsprintf('<iframe src="%s" id="scripto-iframe" class="%s"></iframe>',
@@ -642,5 +662,22 @@ jQuery(document).ready(function() {
             $height = $size[0];
         }
         return array('width' => $width, 'height' => $height);
+    }
+
+    /**
+     * Get path of a file type.
+     *
+     * Paths aren't available after a file is stored, but it can be guessed.
+     *
+     * @param string $type
+     * @return string Partial path
+     */
+    private function _getFilePath($type)
+    {
+        $file = new File;
+        $filename = 'filename.jpg';
+        $file->filename = $filename;
+        $path = $file->getStoragePath($type);
+        return trim(substr($path, 0, strlen($path) - strlen($filename)), '/');
     }
 }
