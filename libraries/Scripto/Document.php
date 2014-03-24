@@ -806,14 +806,14 @@ class Scripto_Document
     {
         $doc = $this->_id;
         $pages = $this->getPages();
+        $status = $this->_adapter->allDocumentPagesTranscriptionStatus($doc);
         $totalPages = count($pages);
         // Counters for each status.
         $completed = 0;
         $partial = 0;
         $notStarted = 0;
         foreach ($pages as $pageId => $pageName) {
-            $status = $this->_adapter->documentPageTranscriptionStatus($pageId);
-            switch ($status) {
+            switch ($status[$pageId]) {
                 case 'Completed':
                     $completed++;
                     break;
