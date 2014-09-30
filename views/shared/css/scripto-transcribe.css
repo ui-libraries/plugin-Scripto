@@ -8,3 +8,6 @@
     height: 600px;
     width: 500px;
 }
+#scripto-transcription-page-html {
+    white-space: pre-wrap;
+}

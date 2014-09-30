@@ -328,8 +328,8 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
     /**
      * Handle AJAX requests from the transcribe action.
      *
-     * 403 Forbidden
      * 400 Bad Request
+     * 403 Forbidden
      * 500 Internal Server Error
      */
     public function pageActionAction()

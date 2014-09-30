@@ -112,8 +112,8 @@ class Scripto_AjaxController extends Omeka_Controller_AbstractActionController
      * Check AJAX requests.
      *
      *
-     * 403 Forbidden
      * 400 Bad Request
+     * 403 Forbidden
      * 500 Internal Server Error
      *
      * @param string $action

@@ -316,15 +316,18 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Render the config form.
+     * Shows plugin configuration page.
      */
-    public function hookConfigForm()
+    public function hookConfigForm($args)
     {
+        $view = $args['view'];
+
         // Set form defaults.
         list($elementSetName, $elementName) = explode(':', get_option('scripto_source_element'));
         $element = get_db()->getTable('Element')->findByElementSetNameAndElementName($elementSetName, $elementName);
         if (empty($element)) {
-            list($elementSetName, $elementName) = explode(':', $this->_options['scripto_source_element']);
+            $elementSetName = self::ELEMENT_SET_NAME;
+            $elementName = 'Transcription';
             $element = get_db()->getTable('Element')->findByElementSetNameAndElementName($elementSetName, $elementName);
         }
         $imageViewer = get_option('scripto_image_viewer');
@@ -347,11 +350,13 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
             set_option('scripto_file_source_path', $this->_options['scripto_file_source_path']);
         }
 
-        echo get_view()->partial('plugins/scripto-config-form.php', array(
-            'element_id' => $element->id,
-            'image_viewer' => $imageViewer,
-            'use_google_docs_viewer' => $useGoogleDocsViewer,
-            'import_type' => $importType,
+        echo $view->partial(
+            'plugins/scripto-config-form.php',
+            array(
+                'element_id' => $element->id,
+                'image_viewer' => $imageViewer,
+                'use_google_docs_viewer' => $useGoogleDocsViewer,
+                'import_type' => $importType,
         ));
     }
 
@@ -455,7 +460,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         {'scripto':{
             'notToTranscribe':'<?php echo __('Not to transcribe'); ?>',
             'toTranscribe':'<?php echo __('To transcribe'); ?>',
-            'confirmation':'<?php echo __('Are your sure to fill all pages of this item with the field "%s"?', get_option('scripto_source_element')); ?>',
+            'confirmation':'<?php echo __('Are your sure to fill all pages of this item from the field "%s" into the field Scripto:Transcription?', get_option('scripto_source_element')); ?>',
             'error':'<?php echo __('Failure during process.'); ?>'
         }}
     );

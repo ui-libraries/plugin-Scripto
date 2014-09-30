@@ -27,11 +27,12 @@
         <label for="scripto_source_element"><?php echo __('Element source used to initialize transcription'); ?></label>
     </div>
     <div class="inputs five columns omega">
-        <p class="explanation"><?php echo __(
-            'A document page is automatically initialized with this element, if available. '
-            . 'This is helpful when Scripto is used to correct OCR for typescript pages. '
-            . 'This can be useful to keep track of original source too.'
-        ); ?></p>
+        <p class="explanation"><?php
+            echo __('A document page is automatically initialized with this element, if available.');
+            echo ' ' . __('This is helpful when Scripto is used to correct OCR for typescript pages.');
+            echo ' ' . __('This can be useful to keep track of original source too.');
+            echo ' ' . __('When the transcription is updated, it is always save into the Scripto:Transcription field.');
+        ?></p>
         <?php
             echo $this->formSelect('scripto_source_element',
                 $element_id,
