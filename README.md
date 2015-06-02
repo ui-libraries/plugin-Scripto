@@ -180,7 +180,7 @@ Copyright
 [DIYHistory|code]: http://diyhistory.lib.uiowa.edu/code.html
 [Github|Scripto]: https://github.com/ui-libraries/DIYHistory-transcribe
 [Scribe]: https://github.com/ui-libraries/scribe
-[CsvImport]: https://github.com/ui-libraries/plugin-CsvImport
+[CsvImport]: https://github.com/Daniel-KM/CsvImport
 [sample]: https://gist.github.com/saverkamp/4732757
 [Scripto issues]: https://github.com/Omeka/plugin-Scripto/Issues
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html "GNU/GPL v3"
