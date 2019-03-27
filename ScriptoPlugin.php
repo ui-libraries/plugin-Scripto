@@ -51,7 +51,10 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected $_options = array(
         'scripto_mediawiki_api_url' => '',
+        'scripto_mediawiki_cookie_prefix' => '',
         'scripto_source_element' => 'Scripto:Transcription',
+        'scripto_import_type' => null,
+        'scripto_allow_register' => false,
         'scripto_image_viewer' => null,
         'scripto_viewer_class' => '',
         'scripto_use_google_docs_viewer' => '',
@@ -61,7 +64,6 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         // because paths aren't available after a file is stored.
         'scripto_file_source_path' => 'original',
         'scripto_files_order' => '',
-        'scripto_import_type' => null,
         'scripto_home_page_text' => '<p>Scripto</p>',
     );
 
@@ -86,35 +88,6 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
         ),
         'fileExtensions' => array(
             'gif', 'jpeg', 'jpg', 'jpe', 'png', 'bmp',
-        ),
-    );
-
-    /**
-     * @var MIME types compatible with Zoom.it.
-     */
-    public static $fileIdentifiersZoomIt = array(
-        'mimeTypes' => array(
-            // gif
-            'image/gif', 'image/x-xbitmap', 'image/gi_',
-            // jpg
-            'image/jpeg', 'image/jpg', 'image/jpe_', 'image/pjpeg',
-            'image/vnd.swiftview-jpeg',
-            // png
-            'image/png', 'application/png', 'application/x-png',
-            // bmp
-            'image/bmp', 'image/x-bmp', 'image/x-bitmap',
-            'image/x-xbitmap', 'image/x-win-bitmap',
-            'image/x-windows-bmp', 'image/ms-bmp', 'image/x-ms-bmp',
-            'application/bmp', 'application/x-bmp',
-            'application/x-win-bitmap',
-            // ico
-            'image/ico', 'image/x-icon', 'application/ico', 'application/x-ico',
-            'application/x-win-bitmap', 'image/x-win-bitmap',
-            // tiff
-            'image/tiff',
-        ),
-        'fileExtensions' => array(
-            'gif', 'jpeg', 'jpg', 'jpe', 'png', 'bmp', 'ico', 'tif', 'tiff',
         ),
     );
 
@@ -320,7 +293,9 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
      */
     public function hookConfigForm($args)
     {
-        $view = $args['view'];
+        $view = get_view();
+
+        $this->_validateMediaWikiApiUrl();
 
         // Set form defaults.
         list($elementSetName, $elementName) = explode(':', get_option('scripto_source_element'));
@@ -331,7 +306,7 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
             $element = get_db()->getTable('Element')->findByElementSetNameAndElementName($elementSetName, $elementName);
         }
         $imageViewer = get_option('scripto_image_viewer');
-        if (!in_array($imageViewer, array('openlayers', 'zoomit'))) {
+        if (!in_array($imageViewer, array('openlayers'))) {
             $imageViewer = 'default';
         }
         $useGoogleDocsViewer = get_option('scripto_use_google_docs_viewer');
@@ -362,32 +337,41 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
 
     /**
      * Handle a submitted config form.
+     *
+     * @param array Options set in the config form.
      */
     public function hookConfig($args)
     {
         $post = $args['post'];
 
-        // Validate the MediaWiki API URL.
-        if (!Scripto::isValidApiUrl(trim($post['scripto_mediawiki_api_url']))) {
-            throw new Omeka_Plugin_Installer_Exception('Invalid MediaWiki API URL');
-        }
+        $this->_validateMediaWikiApiUrl($post['scripto_mediawiki_api_url']);
 
         // Validate the source element.
         $element = get_record_by_id('Element', (integer) $post['scripto_source_element']);
+        $post['scripto_source_element'] = $element->set_name . ':' . $element->name;
 
-        // Set options that are specific to Scripto.
-        set_option('scripto_mediawiki_api_url', trim($post['scripto_mediawiki_api_url']));
-        set_option('scripto_source_element', $element->set_name . ':' . $element->name);
-        set_option('scripto_image_viewer', $post['scripto_image_viewer']);
-        set_option('scripto_viewer_class', trim($post['scripto_viewer_class']));
-        set_option('scripto_use_google_docs_viewer', $post['scripto_use_google_docs_viewer']);
-        set_option('scripto_iframe_class', trim($post['scripto_iframe_class']));
-        set_option('scripto_file_source', trim($post['scripto_file_source']));
-        set_option('scripto_files_order', trim($post['scripto_files_order']));
-        set_option('scripto_import_type', $post['scripto_import_type']);
-        set_option('scripto_home_page_text', trim($post['scripto_home_page_text']));
+        // Get source path.
+        $post['scripto_file_source_path'] = $this->_getFilePath(get_option('scripto_file_source_path'));
 
-        set_option('scripto_file_source_path', $this->_getFilePath(get_option('scripto_file_source_path')));
+        foreach ($this->_options as $optionKey => $optionValue) {
+            if (isset($post[$optionKey])) {
+                set_option($optionKey, $post[$optionKey]);
+            }
+        }
+    }
+
+    /**
+     * Helper to validate the MediaWiki API URL.
+     *
+     * @param string $url If not set, check the current option.
+     */
+    protected function _validateMediaWikiApiUrl($url = null)
+    {
+        $url = $url ?: get_option('scripto_mediawiki_api_url');
+        if (!Scripto::isValidApiUrl($url)) {
+            $flash = Zend_Controller_Action_HelperBroker::getStaticHelper('FlashMessenger');
+            $flash->addMessage(__('Invalid MediaWiki API URL'), 'error');
+        }
     }
 
     public function hookAdminHead($args)
@@ -458,10 +442,10 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
 <script type="text/javascript">
     Omeka.messages = jQuery.extend(Omeka.messages,
         {'scripto':{
-            'notToTranscribe':'<?php echo __('Not to transcribe'); ?>',
-            'toTranscribe':'<?php echo __('To transcribe'); ?>',
-            'confirmation':'<?php echo __('Are your sure to fill all pages of this item from the field "%s" into the field Scripto:Transcription?', get_option('scripto_source_element')); ?>',
-            'error':'<?php echo __('Failure during process.'); ?>'
+            'notToTranscribe':<?php echo json_encode(__('Not to transcribe')); ?>,
+            'toTranscribe':<?php echo json_encode(__('To transcribe')); ?>,
+            'confirmation':<?php echo json_encode(__('Are your sure to fill all pages of this item from the field "%s" into the field Scripto:Transcription?', get_option('scripto_source_element'))); ?>,
+            'error':<?php echo json_encode(__('Failure during process.')); ?>
         }}
     );
 </script>
@@ -539,42 +523,61 @@ class ScriptoPlugin extends Omeka_Plugin_AbstractPlugin
     {
         // Check size via local path to avoid to use the server.
         $imagePath = realpath(FILES_DIR . DIRECTORY_SEPARATOR . get_option('scripto_file_source_path') . DIRECTORY_SEPARATOR . $file->filename);
-        $imageSize = ScriptoPlugin::getImageSize($imagePath, 250);
+        $imageSize = ScriptoPlugin::getImageSize($imagePath);
         // Image to send.
         $imageUrl = $file->getWebPath(get_option('scripto_file_source'));
 ?>
+<div id="map" class="map"></div>
 <script type="text/javascript">
-jQuery(document).ready(function() {
-    var scriptoMap = new OpenLayers.Map('scripto-openlayers', {
-        controls: [
-            new OpenLayers.Control.Navigation(),
-            new OpenLayers.Control.PanZoom(),
-            new OpenLayers.Control.KeyboardDefaults()
-        ]
-    });
-    var graphic = new OpenLayers.Layer.Image(
-        'Document Page',
-        <?php echo js_escape($imageUrl); ?>,
-        new OpenLayers.Bounds(-<?php echo $imageSize['width']; ?>, -<?php echo $imageSize['height']; ?>, <?php echo $imageSize['width']; ?>, <?php echo $imageSize['height']; ?>),
-        new OpenLayers.Size(<?php echo $imageSize['width']; ?>, <?php echo $imageSize['height']; ?>)
-    );
-    scriptoMap.addLayers([graphic]);
-    scriptoMap.zoomToMaxExtent();
-});
-</script>
-<div id="scripto-openlayers" class="<?php echo get_option('scripto_viewer_class'); ?>"></div>
-<?php
-    }
+    var target = 'map';
+    var imgWidth = <?php echo $imageSize['width']; ?>;
+    var imgHeight = <?php echo $imageSize['height']; ?>;
+    var url = <?php echo json_encode($imageUrl); ?>;
 
-    /**
-     * add_file_display_callback() callback for Zoom.it.
-     *
-     * @see Scripto_IndexController::init()
-     * @param File $file
-     */
-    public static function zoomIt($file)
-    {
-        echo get_view()->zoomIt['embedHtml'];
+    // The zoom is set to extent after map initialization.
+    var zoom = 2;
+    var extent = [0, 0, imgWidth, imgHeight];
+
+    var source = new ol.source.ImageStatic({
+        url: url,
+        projection: projection,
+        imageExtent: extent
+    });
+
+    // Map views always need a projection.  Here we just want to map image
+    // coordinates directly to map coordinates, so we create a projection that uses
+    // the image extent in pixels.
+    var projection = new ol.proj.Projection({
+        code: 'pixel',
+        units: 'pixels',
+        extent: extent
+    });
+
+    var map = new ol.Map({
+        layers: [
+            new ol.layer.Image({
+                source: source
+            })
+        ],
+        logo: false,
+        controls: ol.control.defaults({attribution: false}).extend([
+            new ol.control.FullScreen()
+        ]),
+        interactions: ol.interaction.defaults().extend([
+            new ol.interaction.DragRotateAndZoom()
+        ]),
+        target: target,
+        view: new ol.View({
+                projection: projection,
+                center: ol.extent.getCenter(extent),
+                zoom: zoom
+            })
+    });
+
+    // Initialize zoom to extent.
+    map.getView().fit(extent, map.getSize());
+ </script>
+<?php
     }
 
     /**
@@ -585,7 +588,7 @@ jQuery(document).ready(function() {
      */
     public static function googleDocs($file)
     {
-        $uri = Zend_Uri::factory('http://docs.google.com/viewer');
+        $uri = Zend_Uri::factory('https://docs.google.com/viewer');
         $uri->setQuery(array(
             'url' => $file->getWebPath(get_option('scripto_file_source')),
             'embedded' => 'true',
@@ -605,7 +608,12 @@ jQuery(document).ready(function() {
             $apiUrl = get_option('scripto_mediawiki_api_url');
         }
 
-        return new Scripto(new ScriptoAdapterOmeka, array('api_url' => $apiUrl));
+        $cookiePrefix = get_option('scripto_mediawiki_cookie_prefix') ?: null;
+
+        return new Scripto(new ScriptoAdapterOmeka, array(
+            'api_url' => $apiUrl,
+            'cookie_prefix' => $cookiePrefix,
+        ));
     }
 
     /**
@@ -620,7 +628,12 @@ jQuery(document).ready(function() {
             $item = get_current_record('item');
         }
         $scripto = self::getScripto();
-        return $scripto->documentExists($item->id);
+        try {
+            $result = $scripto->documentExists($item->id);
+        } catch (Exception $e) {
+            return false;
+        }
+        return $result;
     }
 
     /**
@@ -663,8 +676,8 @@ jQuery(document).ready(function() {
         if (is_int($width)) {
             $height = round(($width * $size[1]) / $size[0]);
         } else {
-            $width = $size[1];
-            $height = $size[0];
+            $width = $size[0];
+            $height = $size[1];
         }
         return array('width' => $width, 'height' => $height);
     }

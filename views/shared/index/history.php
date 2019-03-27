@@ -15,13 +15,16 @@ echo head($head);
 <!-- navigation -->
 <p>
 <?php if ($this->scripto->isLoggedIn()): ?>
-<?php echo __('Logged in as %s', '<a href="' . html_escape(url('scripto')) . '">' . $this->scripto->getUserName() . '</a>'); ?> 
-(<a href="<?php echo html_escape(url('scripto/index/logout')); ?>"><?php echo __('logout'); ?></a>) 
- | <a href="<?php echo html_escape(url('scripto/watchlist')); ?>"><?php echo __('Your watchlist'); ?></a> 
+<?php echo __('Logged in as %s', '<a href="' . html_escape(url('scripto')) . '">' . $this->scripto->getUserName() . '</a>'); ?>
+(<a href="<?php echo html_escape(url('scripto/index/logout')); ?>"><?php echo __('logout'); ?></a>)
+ | <a href="<?php echo html_escape(url('scripto/watchlist')); ?>"><?php echo __('Your watchlist'); ?></a>
 <?php else: ?>
 <a href="<?php echo html_escape(url('scripto/index/login')); ?>"><?php echo __('Log in to Scripto'); ?></a>
+<?php if (get_option('scripto_allow_register')):?>
+ | <a href="<?php echo html_escape(url('scripto/index/register')); ?>"><?php echo __('Register to Scripto'); ?></a>
 <?php endif; ?>
- | <a href="<?php echo html_escape(url('scripto/recent-changes')); ?>"><?php echo __('Recent changes'); ?></a> 
+<?php endif; ?>
+ | <a href="<?php echo html_escape(url('scripto/recent-changes')); ?>"><?php echo __('Recent changes'); ?></a>
  | <a href="<?php echo html_escape(url(array('controller' => 'items', 'action' => 'show', 'id' => $this->doc->getId()), 'id')); ?>"><?php echo __('View item'); ?></a>
  | <a href="<?php echo html_escape(url(array('controller' => 'files', 'action' => 'show', 'id' => $this->doc->getPageId()), 'id')); ?>"><?php echo __('View file'); ?></a>
  | <a href="<?php echo html_escape(url(array('action' => 'transcribe', 'item-id' => $this->doc->getId(), 'file-id' => $this->doc->getPageId()), 'scripto_action_item_file')); ?>"><?php echo __('Transcribe page'); ?></a>
@@ -47,22 +50,22 @@ echo head($head);
     <tbody>
     <?php foreach ($this->history as $revision): ?>
     <?php
-    $urlCurrent = url(array('item-id' => $this->doc->getId(), 
-                            'file-id' => $this->doc->getPageId(), 
-                            'namespace-index' => $this->namespaceIndex, 
-                            'old-revision-id' => $revision['revision_id'], 
-                            'revision-id' => $this->info['last_revision_id']), 
+    $urlCurrent = url(array('item-id' => $this->doc->getId(),
+                            'file-id' => $this->doc->getPageId(),
+                            'namespace-index' => $this->namespaceIndex,
+                            'old-revision-id' => $revision['revision_id'],
+                            'revision-id' => $this->info['last_revision_id']),
                       'scripto_diff');
-    $urlPrevious = url(array('item-id' => $this->doc->getId(), 
-                             'file-id' => $this->doc->getPageId(), 
-                             'namespace-index' => $this->namespaceIndex, 
-                             'old-revision-id' => $revision['parent_id'], 
-                             'revision-id' => $revision['revision_id']), 
+    $urlPrevious = url(array('item-id' => $this->doc->getId(),
+                             'file-id' => $this->doc->getPageId(),
+                             'namespace-index' => $this->namespaceIndex,
+                             'old-revision-id' => $revision['parent_id'],
+                             'revision-id' => $revision['revision_id']),
                        'scripto_diff');
-    $urlRevert = url(array('item-id' => $this->doc->getId(), 
-                           'file-id' => $this->doc->getPageId(), 
-                           'namespace-index' => $this->namespaceIndex, 
-                           'revision-id' => $revision['revision_id']), 
+    $urlRevert = url(array('item-id' => $this->doc->getId(),
+                           'file-id' => $this->doc->getPageId(),
+                           'namespace-index' => $this->namespaceIndex,
+                           'revision-id' => $revision['revision_id']),
                      'scripto_revision');
     ?>
     <tr>
@@ -78,4 +81,4 @@ echo head($head);
 <?php endif; ?>
 </div><!-- #scripto-history -->
 </div>
-<?php echo foot(); ?>
+<?php echo foot();

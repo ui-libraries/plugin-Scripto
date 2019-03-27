@@ -4,9 +4,8 @@ queue_css_file('scripto-transcribe');
 $head = array('title' => html_escape(implode(' | ', $titleArray)));
 echo head($head);
 if (get_option('scripto_image_viewer') == 'openlayers') {
-    echo js_tag('OpenLayers');
-    // jQuery is enabled by default in Omeka and most themes.
-    // echo js_tag('jquery', 'javascripts/vendor');
+    echo '<link href="' . css_src('ol') . '" media="all" rel="stylesheet" type="text/css" >';
+    echo js_tag('ol');
 }
 ?>
 <script type="text/javascript">
@@ -16,7 +15,7 @@ jQuery(document).ready(function() {
     jQuery('#scripto-transcription-page-edit').click(function() {
         jQuery('#scripto-transcription-page-edit').
             prop('disabled', true).
-            text('<?php echo __('Editing transcription...'); ?>');
+            text('<?php echo __('Saving transcription...'); ?>');
         jQuery.post(
             <?php echo js_escape(url('scripto/index/page-action')); ?>,
             {
@@ -29,10 +28,17 @@ jQuery(document).ready(function() {
             function(data) {
                 jQuery('#scripto-transcription-page-edit').
                     prop('disabled', false).
-                    text('<?php echo __('Edit transcription'); ?>');
+                    text('<?php echo __('Save transcription'); ?>');
                 jQuery('#scripto-transcription-page-html').html(data);
             }
-        );
+        ).fail(function(error) {
+            alert('<?php echo __('There was an error:'); ?>' + "\n\n"
+                + error.responseText + "\n\n"
+                + '<?php echo __('Save your work elsewhere and try again. Contact the administrator if this error persists.'); ?>');
+            jQuery('#scripto-transcription-page-edit').
+                prop('disabled', false).
+                text('<?php echo __('Edit transcription'); ?>');
+        });
     });
 
     // Handle edit talk page.
@@ -55,7 +61,14 @@ jQuery(document).ready(function() {
                     text('<?php echo __('Edit discussion'); ?>');
                 jQuery('#scripto-talk-page-html').html(data);
             }
-        );
+        ).fail(function(error) {
+            alert('<?php echo __('There was an error:'); ?>' + "\n\n"
+                + error.responseText + "\n\n"
+                + '<?php echo __('Save your work elsewhere and try again. Contact the administrator if this error persists.'); ?>');
+            jQuery('#scripto-talk-page-edit').
+                prop('disabled', false).
+                text('<?php echo __('Edit discussion'); ?>');
+        });
     });
 
     // Handle default transcription/talk visibility.
@@ -63,7 +76,7 @@ jQuery(document).ready(function() {
         jQuery('#scripto-transcription').hide();
         jQuery('#scripto-page-show').text('<?php echo __('show transcription'); ?>');
     } else {
-        window.location.hash = '#transcription'
+        window.location.hash = '#transcription';
         jQuery('#scripto-talk').hide();
         jQuery('#scripto-page-show').text('<?php echo __('show discussion'); ?>');
     }
@@ -334,13 +347,16 @@ jQuery(document).ready(function() {
  | <a href="<?php echo html_escape(url('scripto/watchlist')); ?>"><?php echo __('Your watchlist'); ?></a>
 <?php else: ?>
 <a href="<?php echo html_escape(url('scripto/index/login')); ?>"><?php echo __('Log in to Scripto'); ?></a>
+<?php if (get_option('scripto_allow_register')):?>
+ | <a href="<?php echo html_escape(url('scripto/index/register')); ?>"><?php echo __('Register to Scripto'); ?></a>
+<?php endif; ?>
 <?php endif; ?>
  | <a href="<?php echo html_escape(url('scripto/recent-changes')); ?>"><?php echo __('Recent changes'); ?></a>
  | <a href="<?php echo html_escape(url(array('controller' => 'items', 'action' => 'show', 'id' => $this->doc->getId()), 'id')); ?>"><?php echo __('View item'); ?></a>
  | <a href="<?php echo html_escape(url(array('controller' => 'files', 'action' => 'show', 'id' => $this->doc->getPageId()), 'id')); ?>"><?php echo __('View file'); ?></a>
 </p>
 
-<h2><?php if ($this->doc->getTitle()): ?><?php echo $this->doc->getTitle(); ?><?php else: ?><?php echo __('Untitled Document'); ?><?php endif; ?></h2>
+<h2><?php echo $this->doc->getTitle() ?: __('Untitled Document'); ?></h2>
 <?php if ($this->scripto->canExport()): ?><div><?php echo $this->formButton('scripto-transcription-document-import', __('Import document'), array('style' => 'display:inline; float:none;')); ?></div><?php endif; ?>
 <h3><?php echo $this->doc->getPageName(); ?></h3>
 
@@ -358,9 +374,12 @@ jQuery(document).ready(function() {
 <div id="scripto-transcription">
     <?php if ($this->doc->canEditTranscriptionPage()): ?>
     <div id="scripto-transcription-edit" style="display: none;">
-        <div><?php echo $this->formTextarea('scripto-transcription-page-wikitext', $this->doc->getTranscriptionPageWikitext(), array('cols' => '76', 'rows' => '16')); ?></div>
         <div>
-            <?php echo $this->formButton('scripto-transcription-page-edit', __('Edit transcription'), array('style' => 'display:inline; float:none;')); ?>
+            <label for="scripto-transcription-page-wikitext"><?php echo __('Transcription'); ?></label>
+            <?php echo $this->formTextarea('scripto-transcription-page-wikitext', $this->doc->getTranscriptionPageWikitext(), array('cols' => '76', 'rows' => '16')); ?>
+        </div>
+        <div>
+            <?php echo $this->formButton('scripto-transcription-page-edit', __('Save transcription'), array('style' => 'display:inline; float:none;')); ?>
         </div>
         <p><a href="http://www.mediawiki.org/wiki/Help:Formatting" target="_blank"><?php echo __('wiki formatting help'); ?></a></p>
     </div><!-- #scripto-transcription-edit -->
@@ -383,7 +402,10 @@ jQuery(document).ready(function() {
 <div id="scripto-talk">
     <?php if ($this->doc->canEditTalkPage()): ?>
     <div id="scripto-talk-edit" style="display: none;">
-        <div><?php echo $this->formTextarea('scripto-talk-page-wikitext', $this->doc->getTalkPageWikitext(), array('cols' => '76', 'rows' => '16')); ?></div>
+        <div>
+            <label for="scripto-talk-page-wikitext"><?php echo __('Edit Discussion'); ?></label>
+            <?php echo $this->formTextarea('scripto-talk-page-wikitext', $this->doc->getTalkPageWikitext(), array('cols' => '76', 'rows' => '16')); ?>
+        </div>
         <div>
             <?php echo $this->formButton('scripto-talk-page-edit', __('Edit discussion'), array('style' => 'display:inline; float:none;')); ?>
         </div>
@@ -404,4 +426,4 @@ jQuery(document).ready(function() {
 
 </div><!-- #scripto-transcribe -->
 </div>
-<?php echo foot(); ?>
+<?php echo foot();

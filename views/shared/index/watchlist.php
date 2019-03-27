@@ -11,9 +11,9 @@ echo head($head);
 <div id="scripto-watchlist" class="scripto">
 <!-- navigation -->
 <p>
-<?php echo __('Logged in as %s', '<a href="' . html_escape(url('scripto')) . '">' . $this->scripto->getUserName() . '</a>'); ?> 
-(<a href="<?php echo html_escape(url('scripto/index/logout')); ?>"><?php echo __('logout'); ?></a>) 
- | <a href="<?php echo html_escape(url('scripto/recent-changes')); ?>"><?php echo __('Recent changes'); ?></a> 
+<?php echo __('Logged in as %s', '<a href="' . html_escape(url('scripto')) . '">' . $this->scripto->getUserName() . '</a>'); ?>
+(<a href="<?php echo html_escape(url('scripto/index/logout')); ?>"><?php echo __('logout'); ?></a>)
+ | <a href="<?php echo html_escape(url('scripto/recent-changes')); ?>"><?php echo __('Recent changes'); ?></a>
 </p>
 
 <!-- watchlist -->
@@ -38,17 +38,17 @@ echo head($head);
     // changes
     $changes = __($revision['action']);
     $urlHistory = url(array(
-        'item-id' => $revision['document_id'], 
-        'file-id' => $revision['document_page_id'], 
-        'namespace-index' => $revision['namespace_index'], 
+        'item-id' => $revision['document_id'],
+        'file-id' => $revision['document_page_id'],
+        'namespace-index' => $revision['namespace_index'],
     ), 'scripto_history');
     $changes .= ' (<a href="' . html_escape($urlHistory) . '">' . __('hist') . '</a>)';
-    
+
     // document page name
     $documentPageName = ScriptoPlugin::truncate($revision['document_page_name'], 30);
     $urlTranscribe = url(array(
-        'action' => 'transcribe', 
-        'item-id' => $revision['document_id'], 
+        'action' => 'transcribe',
+        'item-id' => $revision['document_id'],
         'file-id' => $revision['document_page_id']
     ), 'scripto_action_item_file');
     if (1 == $revision['namespace_index']) {
@@ -56,15 +56,15 @@ echo head($head);
     } else {
         $urlTranscribe .= '#transcription';
     }
-    
+
     // document title
     $documentTitle = ScriptoPlugin::truncate($revision['document_title'], 30, __('Untitled'));
     $urlItem = url(array(
-        'controller' => 'items', 
-        'action' => 'show', 
+        'controller' => 'items',
+        'action' => 'show',
         'id' => $revision['document_id']
     ), 'id');
-    
+
     // length changed
     $lengthChanged = $revision['new_length'] - $revision['old_length'];
     if (0 <= $lengthChanged) {
@@ -85,4 +85,4 @@ echo head($head);
 <?php endif; ?>
 </div><!-- #scripto-watchlist -->
 </div>
-<?php echo foot(); ?>
+<?php echo foot();

@@ -31,8 +31,8 @@ class Scripto
     /**
      * This Scripto version.
      */
-    const VERSION = '1.1.1';
-
+    const VERSION = '1.2.0';
+    
     /**
      * @var Scripto_Adapter_Interface The adapter object for the external
      * system.
@@ -57,6 +57,7 @@ class Scripto
      * <ul>
      *     <li>$mediawiki['api_url']: required; the MediaWiki API URL</li>
      *     <li>$mediawiki['pass_cookies']: optional pass cookies to the web
+     *     <li>$mediawiki['cookie_prefix']: optional; set the cookie prefix
      *     browser via API client</li>
      * </ul>
      */
@@ -72,9 +73,13 @@ class Scripto
             if (!isset($mediawiki['pass_cookies'])) {
                 $mediawiki['pass_cookies'] = true;
             }
-
-            $this->_mediawiki = new Scripto_Service_MediaWiki($mediawiki['api_url'],
-                                                              (bool) $mediawiki['pass_cookies']);
+            if (!isset($mediawiki['cookie_prefix'])) {
+                $mediawiki['cookie_prefix'] = null;
+            }
+            
+            $this->_mediawiki = new Scripto_Service_MediaWiki($mediawiki['api_url'], 
+                                                              (bool) $mediawiki['pass_cookies'],
+                                                              $mediawiki['cookie_prefix']);
         } else {
             throw new Scripto_Exception('The provided mediawiki parameter is invalid.');
         }
@@ -129,6 +134,23 @@ class Scripto
     public function getDocument($id)
     {
         return new Scripto_Document($id, $this->_adapter, $this->_mediawiki);
+    }
+
+    /**
+     * Register via the MediaWiki service.
+     *
+     * It is possible to restrict account creation in MediaWiki.
+     * @link http://www.mediawiki.org/wiki/API:Account_creation
+     *
+     * @uses Scripto_Service_MediaWiki::register()
+     * @param string $username The MediaWiki user's username.
+     * @param string $password The MediaWiki user's password.
+     * @param string $password The MediaWiki user's email.
+     */
+    public function register($username,$password,$email,$realname)
+    {
+        $this->_mediawiki->register($username,$password,$email,$realname);
+        $this->setUserInfo();
     }
 
     /**
@@ -211,7 +233,10 @@ class Scripto
      */
     public function setUserInfo()
     {
-        $this->_userInfo = $this->_mediawiki->getUserInfo('groups|rights');
+        try {
+            $this->_userInfo = $this->_mediawiki->getUserInfo('groups|rights');
+        } catch (Zend_Http_Client_Exception $e) {
+        }
     }
 
     /**
@@ -732,9 +757,11 @@ class Scripto
         // Infer from comment and revision_id.
         if (array_key_exists('comment', $hints)) {
             $commentActions = array('Replaced', 'Unprotected', 'Protected', 'Created');
-            $actionPattern = '/^(' . implode('|', $commentActions) . ').+$/se';
+            $actionPattern = '/^(' . implode('|', $commentActions) . ').+$/s';
             if (preg_match($actionPattern, $hints['comment'])) {
-                $action = preg_replace($actionPattern, 'strtolower("$1")', $hints['comment']);
+                $action = preg_replace_callback($actionPattern, function ($matches) {
+                    return strtolower($matches[1]);
+                }, $hints['comment']);
             } else {
                 // Watchlist returns revision_id=0 when the action is protect
                 // or unprotect.

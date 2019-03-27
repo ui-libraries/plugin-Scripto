@@ -60,9 +60,13 @@ number stored in “Weight” is used by Scribe to sort items on collections/sho
 page by completion progress, sinking the most completed items to the bottom and
 floating the least completed to the top.
 
+[NLW] added the ability to create mediawiki account through Scripto API. Code
+heavily borrowed from [Joris Lambrechts] particularly [commit5].
 
 Installation
 ------------
+
+Install [MediaWiki].
 
 Uncompress files and rename plugin folder "Scripto".
 
@@ -167,9 +171,11 @@ and completed.
 Copyright
 ---------
 
-* Copyright Center for History and New Media, 2008-2013
+* Copyright Center for History and New Media, 2008-2016
 * Copyright Shawn Averkamp, 2012-2013
-* Copyright Daniel Berthereau, 2013-2014
+* Copyright National Library of Wales 2015
+* Copyright JorisLambrechts
+* Copyright Daniel Berthereau, 2013-2016
 
 
 [Scripto]: http://scripto.org/
@@ -180,10 +186,14 @@ Copyright
 [DIYHistory|code]: http://diyhistory.lib.uiowa.edu/code.html
 [Github|Scripto]: https://github.com/ui-libraries/DIYHistory-transcribe
 [Scribe]: https://github.com/ui-libraries/scribe
-[CsvImport]: https://github.com/Daniel-KM/CsvImport
+[CsvImport]: https://github.com/Daniel-KM/Omeka-plugin-CsvImport
 [sample]: https://gist.github.com/saverkamp/4732757
-[Scripto issues]: https://github.com/Omeka/plugin-Scripto/Issues
+[Scripto issues]: https://github.com/Omeka/plugin-Scripto/issues
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html "GNU/GPL v3"
 [Daniel-KM]: https://github.com/Daniel-KM "Daniel Berthereau"
 [UI Libraries]: http://www.lib.uiowa.edu "University of Iowa Libraries"
 [École des Mines ParisTech]: http://bib.mines-paristech.fr
+[Joris Lambrechts]: https://github.com/libis/Schatkamer "Joris Lambrechts"
+[commit5]: https://github.com/libis/Schatkamer/commit/dec4cebb37dc03f1b16603115c43f9ed593ffedf
+[Paul Mccann]: https://github.com/hotnuts21/plugin-Scripto "Paul McCann"
+[NLW]: http://www.llgc.org.uk

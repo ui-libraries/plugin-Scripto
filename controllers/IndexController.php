@@ -18,9 +18,6 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
                 case 'openlayers':
                     add_file_display_callback(ScriptoPlugin::$fileIdentifiersOpenLayers, 'ScriptoPlugin::openLayers');
                     break;
-                case 'zoomit':
-                    add_file_display_callback(ScriptoPlugin::$fileIdentifiersZoomIt, 'ScriptoPlugin::zoomIt');
-                    break;
                 default:
                     // Do nothing. Use Omeka default file display stategy.
                     break;
@@ -81,16 +78,70 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
 
         // Set the URL to redirect to on a sucessful login.
         $redirectUrl = null;
+        // Assume login error and reassign the parameter.
         if ($this->_getParam('scripto_redirect_url')) {
-            // Assume login error and reassign the parameter.
             $redirectUrl = $this->_getParam('scripto_redirect_url');
-        } else if ('scripto' == $this->getRequest()->getModuleName() && $_SERVER['HTTP_REFERER']) {
-            // Assign HTTP referer to scripto_redirect_url parameter only if
-            // coming from the Scripto application.
-            $redirectUrl = $_SERVER['HTTP_REFERER'];
+        }
+        // Assign HTTP referer to scripto_redirect_url parameter only if
+        // coming from the Scripto application.
+        elseif ($this->getRequest()->getModuleName() == 'scripto'
+                && !empty($_SERVER['HTTP_REFERER'])
+            ) {
+            $redirectUrl = $_SERVER['HTTP_REFERER'] == absolute_url('scripto/index/register')
+                ? absolute_url('scripto/index/index')
+                : $_SERVER['HTTP_REFERER'];
         }
 
         $this->view->redirectUrl = $redirectUrl;
+        $this->view->scripto = $scripto;
+    }
+
+    /**
+     * Register account in to Mediawiki/Scripto.
+     */
+    public function registerAction()
+    {
+        if (!get_option('scripto_allow_register')) {
+            throw new Omeka_Controller_Exception_404;
+        }
+
+        $registeredOK = false;
+        try {
+            $scripto = ScriptoPlugin::getScripto();
+            if ($scripto->isLoggedIn()) {
+                $this->_helper->redirector->goto('index');
+            }
+            // Handle a registration.
+            if ($this->_getParam('scripto_mediawiki_register')) {
+                $scripto->register(
+                    $this->_getParam('scripto_mediawiki_username'),
+                    $this->_getParam('scripto_mediawiki_password'),
+                    $this->_getParam('scripto_mediawiki_email'),
+                    $this->_getParam('scripto_mediawiki_realname'));
+                $registeredOK = true;
+            }
+        } catch (Scripto_Service_Exception $e) {
+            $this->_helper->flashMessenger($e->getMessage());
+        }
+
+        // Set the URL to redirect to on a sucessful registration.
+        $redirectUrl = null;
+        // Assume login error and reassign the parameter.
+        if ($this->_getParam('scripto_redirect_url')) {
+            $redirectUrl = $this->_getParam('scripto_redirect_url');
+        }
+        // Assign HTTP referer to scripto_redirect_url parameter only if
+        // coming from the Scripto application.
+        elseif ($this->getRequest()->getModuleName() == 'scripto'
+                && !empty($_SERVER['HTTP_REFERER'])
+            ) {
+            $redirectUrl = $_SERVER['HTTP_REFERER'] == absolute_url('scripto/index/register')
+                ? absolute_url('scripto/index/login')
+                : $_SERVER['HTTP_REFERER'];
+        }
+
+        $this->view->redirectUrl = $redirectUrl;
+        $this->view->registeredOK = $registeredOK;
         $this->view->scripto = $scripto;
     }
 
@@ -180,7 +231,8 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
             $file = $this->_helper->db->getTable('File')->find($doc->getPageId());
 
             // Set the page HTML.
-            $transcriptionPageHtml = Scripto::removeHtmlAttributes($doc->getTranscriptionPageHtml());
+            //$transcriptionPageHtml = Scripto::removeHtmlAttributes($doc->getTranscriptionPageHtml());
+            $transcriptionPageHtml = $doc->getTranscriptionPageHtml();
             $talkPageHtml = Scripto::removeHtmlAttributes($doc->getTalkPageHtml());
 
             // Set all the document's pages.
@@ -217,14 +269,6 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
         } catch (Scripto_Exception $e) {
             $this->_helper->flashMessenger($e->getMessage());
             $this->_helper->redirector->goto('index');
-        }
-
-        // Get the embed HTML for the Zoom.it image viewer.
-        if ('zoomit' == get_option('scripto_image_viewer')) {
-            $client = new Zend_Http_Client('http://api.zoom.it/v1/content');
-            $client->setParameterGet('url', $file->getWebPath(get_option('scripto_file_source')));
-            $response = json_decode($client->request()->getBody(), true);
-            $this->view->zoomIt = $response;
         }
 
         $this->view->file = $file;
@@ -395,6 +439,16 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
                             $body = $doc->getTranscriptionPage($type);
                         }
                     }
+
+                    //Call hook to notify of transcription edit.
+                    $pluginBroker = get_plugin_broker();
+                    $pluginBroker->callHook("scripto_edit", array(
+                        'action' => $this->_getParam('page_action'),
+                        'item_id' => $this->_getParam('item_id'),
+                        'file_id' => $this->_getParam('file_id'),
+                        'doc' => $doc,
+                        'body' => $text,
+                    ));
                     break;
                 case 'watch':
                     $doc->watchPage();
@@ -455,7 +509,9 @@ class Scripto_IndexController extends Omeka_Controller_AbstractActionController
 
             $this->getResponse()->setBody($body);
         } catch (Scripto_Exception $e) {
-            $this->getResponse()->setHttpResponseCode(500);
+            $this->getResponse()
+                ->setHttpResponseCode(500)
+                ->setBody($e->getMessage());
         }
     }
 }

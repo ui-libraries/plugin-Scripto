@@ -12,13 +12,16 @@ echo head($head);
 <!-- navigation -->
 <p>
 <?php if ($this->scripto->isLoggedIn()): ?>
-<?php echo __('Logged in as %s', $this->scripto->getUserName()); ?> 
-(<a href="<?php echo html_escape(url('scripto/index/logout')); ?>"><?php echo __('logout'); ?></a>) 
- | <a href="<?php echo html_escape(url('scripto/watchlist')); ?>"><?php echo __('Your watchlist'); ?></a> 
+<?php echo __('Logged in as %s', $this->scripto->getUserName()); ?>
+(<a href="<?php echo html_escape(url('scripto/index/logout')); ?>"><?php echo __('logout'); ?></a>)
+ | <a href="<?php echo html_escape(url('scripto/watchlist')); ?>"><?php echo __('Your watchlist'); ?></a>
 <?php else: ?>
 <a href="<?php echo html_escape(url('scripto/index/login')); ?>"><?php echo __('Log in to Scripto'); ?></a>
+<?php if (get_option('scripto_allow_register')):?>
+ | <a href="<?php echo html_escape(url('scripto/index/register')); ?>"><?php echo __('Register to Scripto'); ?></a>
 <?php endif; ?>
- | <a href="<?php echo html_escape(url('scripto/recent-changes')); ?>"><?php echo __('Recent changes'); ?></a> 
+<?php endif; ?>
+ | <a href="<?php echo html_escape(url('scripto/recent-changes')); ?>"><?php echo __('Recent changes'); ?></a>
 </p>
 
 <!-- your contributions -->
@@ -28,17 +31,17 @@ echo head($head);
 <?php else: ?>
 <h2><?php echo __('Welcome to Scripto!'); ?></h2>
 <p><?php echo __(
-    'By using this plugin you are helping to transcribe items in %1$s. All items with ' 
-  . 'files can be transcribed. For these purposes an item is a %2$sdocument%3$s, and ' 
-  . 'an item\'s files are its %4$spages%5$s. To begin transcribing documents, %6$sbrowse ' 
-  . 'items%7$s or %8$sview recent changes%9$s to Scripto. You may %10$slog in%11$s to ' 
-  . 'access your account and enable certain Scripto features. Login may not be required ' 
-  . 'by the administrator.', 
-    '<i>' . get_option('site_title') . '</i>', 
-    '<em>', '</em>', 
-    '<em>', '</em>', 
-    '<a href="' . html_escape(url('items')) . '">', '</a>', 
-    '<a href="' . html_escape(url('scripto/recent-changes')) . '">', '</a>', 
+    'By using this plugin you are helping to transcribe items in %1$s. All items with '
+  . 'files can be transcribed. For these purposes an item is a %2$sdocument%3$s, and '
+  . 'an item\'s files are its %4$spages%5$s. To begin transcribing documents, %6$sbrowse '
+  . 'items%7$s or %8$sview recent changes%9$s to Scripto. You may %10$slog in%11$s to '
+  . 'access your account and enable certain Scripto features. Login may not be required '
+  . 'by the administrator.',
+    '<i>' . get_option('site_title') . '</i>',
+    '<em>', '</em>',
+    '<em>', '</em>',
+    '<a href="' . html_escape(url('items')) . '">', '</a>',
+    '<a href="' . html_escape(url('scripto/recent-changes')) . '">', '</a>',
     '<a href="' . html_escape(url('scripto/login')) . '">', '</a>'
 ); ?></p>
 <?php endif; ?>
@@ -61,8 +64,8 @@ echo head($head);
     // document page name
     $documentPageName = ScriptoPlugin::truncate($documentPage['document_page_name'], 60);
     $urlTranscribe = url(array(
-        'action' => 'transcribe', 
-        'item-id' => $documentPage['document_id'], 
+        'action' => 'transcribe',
+        'item-id' => $documentPage['document_id'],
         'file-id' => $documentPage['document_page_id']
     ), 'scripto_action_item_file');
     if (1 == $documentPage['namespace_index']) {
@@ -70,12 +73,12 @@ echo head($head);
     } else {
         $urlTranscribe .= '#transcription';
     }
-    
+
     // document title
     $documentTitle = ScriptoPlugin::truncate($documentPage['document_title'], 60, __('Untitled'));
     $urlItem = url(array(
-        'controller' => 'items', 
-        'action' => 'show', 
+        'controller' => 'items',
+        'action' => 'show',
         'id' => $documentPage['document_id']
     ), 'id');
     ?>
@@ -91,4 +94,4 @@ echo head($head);
 <?php endif; ?>
 </div><!-- #scripto-index -->
 </div>
-<?php echo foot(); ?>
+<?php echo foot();
